@@ -830,6 +830,10 @@ function loadHistory(){ /* deshabilitado a propósito: siempre se usa la semilla
 // ── Desglose por tipo de equipo del último día cargado (para los modales) ──
 // Semilla: calculado el 2026-08-05 con los 3 XLS reales del día. Solo cambia si
 // alguien arrastra XLS en su propia pestaña (en memoria, no persiste al recargar).
+// Fecha + hora reales en que Claude generó esta actualización (se hornea cada entrega;
+// el negocio se procesa un día y se presenta al siguiente, por eso queda registrada la hora exacta).
+let ULTIMA_ACTUALIZACION='19-Ago-2026 · 18:10 hrs';
+let ULTIMA_HORA='18:10 hrs';
 let ULTIMO_BREAKDOWN={
   fecha:'2026-08-19',
   inv:  {portatiles:2854, ordenadores:802, impresoras:182, monitores:719, servidores:33, otros:5827},
@@ -863,7 +867,7 @@ function setDelta(id,key,val,invertGood=false){
 
 function updateDashboard(r){
   const n=HIST.fechas.length, last=HIST.fechas[n-1];
-  $$('fecha-lbl',last+' · Actualizado con datos reales');
+  $$('fecha-lbl',last+' · Generado '+ULTIMA_ACTUALIZACION+' · Actualizado con datos reales');
 
   // KPIs
   $$('kv-inv',HIST.inv[n-1].toLocaleString()); setDelta('kd-inv','inv',r.total_inv,true);
@@ -2306,7 +2310,7 @@ window.addEventListener('load', async ()=>{
   // Si hay historial guardado, mostrar el dashboard con los últimos datos
   if(HIST.inv.length>0){
     const n=HIST.inv.length,last=HIST.fechas[n-1];
-    document.getElementById('fecha-lbl').textContent=last+' · Historial '+(gotRemote?'(Google Sheets — compartido)':'(local — sube XLS para actualizar)');
+    document.getElementById('fecha-lbl').textContent=last+' · Generado '+ULTIMA_ACTUALIZACION+' · Historial '+(gotRemote?'(Google Sheets — compartido)':'(local — sube XLS para actualizar)');
     // Reconstruir r desde el historial para updateDashboard
     const r={
       total_inv:HIST.inv[n-1],total_rent:HIST.rent[n-1],total_disp:HIST.disp[n-1],total_dano:HIST.dano[n-1],
@@ -2322,7 +2326,7 @@ window.addEventListener('load', async ()=>{
     updateDashboard(r);
     document.getElementById('dashboard').style.display='block';
     document.getElementById('status-bar').style.display='flex';
-    document.getElementById('sb-fecha').textContent=last;
+    document.getElementById('sb-fecha').textContent=last+' · '+ULTIMA_HORA;
     document.getElementById('sb-regs').textContent=HIST.inv[n-1].toLocaleString()+' equipos';
     document.getElementById('sb-prev').textContent=n>1?HIST.fechas[n-2]:'Primer registro';
     document.getElementById('sb-msg').textContent='Historial: '+n+' días';

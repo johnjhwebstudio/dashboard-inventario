@@ -358,6 +358,7 @@ body:not(.light) .ct{text-shadow:0 0 10px rgba(129,140,248,.28)}
   <div class="ht">
     <h1>Dashboard de Inventario</h1>
     <p id="fecha-lbl">Sin datos — sube los archivos XLS</p>
+    <p id="reloj-vivo" style="font-size:.75rem;opacity:.6;margin:2px 0 0">🕐 Hora actual: <span id="reloj-vivo-val">--:--:--</span> · esta página está viva</p>
   </div>
   <div class="hbts">
     <div class="btn"><span class="dlive"></span>Autónomo</div>
@@ -4323,6 +4324,7 @@ async function processXLS(){
     ]);
     const r=calcMetrics(rowsD,rowsR,rowsDan,rowsV,rowsB);
     const today=todayStr();
+    marcarActualizacionAhora(); // ULTIMA_ACTUALIZACION/ULTIMA_HORA en vivo, ya con la hora real de este momento
     addToHistory(today,r);
     saveHistory();
     saveBreakdown(today,r.breakdown); // guarda el desglose por tipo de equipo del día
@@ -4341,7 +4343,7 @@ async function processXLS(){
     uz.querySelector('.uz-sub').textContent=`${today} · ${r.total_inv.toLocaleString()} equipos · Haz clic para cargar nuevo día`;
     document.getElementById('dashboard').style.display='block';
     document.getElementById('status-bar').style.display='flex';
-    document.getElementById('sb-fecha').textContent=today;
+    document.getElementById('sb-fecha').textContent=today+' · '+ULTIMA_HORA;
     document.getElementById('sb-regs').textContent=r.total_inv.toLocaleString()+' equipos';
     const prev=HIST.fechas.length>1?HIST.fechas[HIST.fechas.length-2]:'N/A';
     document.getElementById('sb-prev').textContent=prev;
@@ -4441,6 +4443,24 @@ function todayStr(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
+// Formato "bonito" DD-Mon-YYYY (español) + hora 24h, usado por TODO el HTML
+// (pantalla en vivo y export) para que fecha Y hora se actualicen siempre
+// juntas, en el mismo lugar. No usar toLocaleTimeString/Date ISO sueltos
+// en ningún otro punto del código: todo pasa por aquí.
+const MESES_ES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function fechaHoraBonita(d){
+  d=d||new Date();
+  const fechaBonita=String(d.getDate()).padStart(2,'0')+'-'+MESES_ES[d.getMonth()]+'-'+d.getFullYear();
+  const horaStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+' hrs';
+  return {fechaBonita,horaStr};
+}
+// Actualiza ULTIMA_ACTUALIZACION/ULTIMA_HORA EN VIVO (no solo al exportar)
+// para que la pantalla nunca muestre una hora vieja tras cargar XLS nuevos.
+function marcarActualizacionAhora(){
+  const {fechaBonita,horaStr}=fechaHoraBonita();
+  ULTIMA_ACTUALIZACION=fechaBonita+' · '+horaStr;
+  ULTIMA_HORA=horaStr;
+}
 function addToHistory(fecha,r){
   // Si ya existe esa fecha, reemplazar; si no, agregar
   const idx=HIST.fechas.indexOf(fecha);
@@ -4517,7 +4537,7 @@ function setDelta(id,key,val,invertGood=false){
 
 function updateDashboard(r){
   const n=HIST.fechas.length, last=HIST.fechas[n-1];
-  $$('fecha-lbl',last+' · Generado '+ULTIMA_ACTUALIZACION+' · Actualizado con datos reales');
+  $$('fecha-lbl',last+' · Datos publicados: '+ULTIMA_ACTUALIZACION+' · Actualizado con datos reales');
 
   // KPIs
   $$('kv-inv',HIST.inv[n-1].toLocaleString()); setDelta('kd-inv','inv',r.total_inv,true);
@@ -6150,14 +6170,26 @@ function exportarHTMLActualizado(){
   const uzTitleBackup = uzTitleEl ? uzTitleEl.textContent : '';
   const uzClassBackup = document.getElementById('upload-zone').className;
 
+  // Refrescar la hora justo al momento REAL de publicar (no la de cuando se
+  // cargaron los XLS, que pudo ser minutos antes) — misma función que usa
+  // la pantalla en vivo, así fecha Y hora quedan consistentes en un solo lugar.
+  marcarActualizacionAhora();
+  // Repinta las etiquetas visibles con el valor recién refrescado, para que
+  // lo que se ve en pantalla en el momento de publicar sea EXACTAMENTE lo
+  // que queda horneado en el archivo descargado (nunca deben desincronizarse).
+  const nLbl=HIST.fechas.length, lastLbl=HIST.fechas[nLbl-1];
+  if(lastLbl){
+    $$('fecha-lbl',lastLbl+' · Datos publicados: '+ULTIMA_ACTUALIZACION+' · Actualizado con datos reales');
+    document.getElementById('sb-fecha').textContent=lastLbl+' · '+ULTIMA_HORA;
+  }
+
   let out = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 
   const fecha = todayStr();
-  const horaStr = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+' hrs';
 
   out = out.replace(/\nlet HIST\s*=\s*\{[\s\S]*?\};/, '\nlet HIST = ' + JSON.stringify(HIST) + ';');
-  out = out.replace(/let ULTIMA_ACTUALIZACION\s*=\s*'[^']*';/, "let ULTIMA_ACTUALIZACION='" + fecha + ' · ' + horaStr + "';");
-  out = out.replace(/let ULTIMA_HORA\s*=\s*'[^']*';/, "let ULTIMA_HORA='" + horaStr + "';");
+  out = out.replace(/let ULTIMA_ACTUALIZACION\s*=\s*'[^']*';/, "let ULTIMA_ACTUALIZACION='" + ULTIMA_ACTUALIZACION + "';");
+  out = out.replace(/let ULTIMA_HORA\s*=\s*'[^']*';/, "let ULTIMA_HORA='" + ULTIMA_HORA + "';");
   out = out.replace(/\nlet ULTIMO_BREAKDOWN\s*=\s*\{[\s\S]*?\};/, '\nlet ULTIMO_BREAKDOWN=' + JSON.stringify(ULTIMO_BREAKDOWN) + ';');
   out = out.replace(/\nlet SNAPSHOT_ANTERIOR\s*=\s*\{[\s\S]*?\};/, '\nlet SNAPSHOT_ANTERIOR = ' + JSON.stringify(PENDIENTE_SNAPSHOT) + ';');
   out = out.replace(/\nlet CLIENTES_POR_FOLIO\s*=\s*\{[\s\S]*?\};/, '\nlet CLIENTES_POR_FOLIO = ' + JSON.stringify(CLIENTES_POR_FOLIO) + ';');
@@ -6184,6 +6216,19 @@ document.addEventListener('DOMContentLoaded', function(){
     });
     console.log('✅ file-input listener registrado');
   }
+  // Reloj en vivo — se mueve solo, segundo a segundo, SIN depender de cargar
+  // XLS ni de publicar. Es la prueba visual de que la página no está
+  // congelada: si este número avanza, todo lo demás está funcionando bien.
+  // "Datos actualizados" (fecha-lbl) es una cosa aparte: esa solo cambia
+  // cuando de verdad se procesan y publican XLS nuevos, a propósito.
+  function tickReloj(){
+    const el=document.getElementById('reloj-vivo-val');
+    if(!el)return;
+    const d=new Date();
+    el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+  }
+  tickReloj();
+  setInterval(tickReloj,1000);
 });
 
 window.addEventListener('load', async ()=>{
@@ -6193,7 +6238,7 @@ window.addEventListener('load', async ()=>{
   // Si hay historial guardado, mostrar el dashboard con los últimos datos
   if(HIST.inv.length>0){
     const n=HIST.inv.length,last=HIST.fechas[n-1];
-    document.getElementById('fecha-lbl').textContent=last+' · Generado '+ULTIMA_ACTUALIZACION+' · Historial '+(gotRemote?'(Google Sheets — compartido)':'(local — sube XLS para actualizar)');
+    document.getElementById('fecha-lbl').textContent=last+' · Datos publicados: '+ULTIMA_ACTUALIZACION+' · Historial '+(gotRemote?'(Google Sheets — compartido)':'(local — sube XLS para actualizar)');
     // Reconstruir r desde el historial para updateDashboard
     const r={
       total_inv:HIST.inv[n-1],total_rent:HIST.rent[n-1],total_disp:HIST.disp[n-1],total_dano:HIST.dano[n-1],

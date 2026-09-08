@@ -6171,9 +6171,18 @@ function prepararPublicacion(diff, snapNuevo){
   PENDIENTE_DIFF = diff; PENDIENTE_SNAPSHOT = snapNuevo;
   const pendientes = diff.foliosNuevos.filter(x => !CLIENTES_POR_FOLIO[x.folio]);
   const panel = document.getElementById('pend-clientes-panel');
+  // Auditoría severa (08-Sep-2026): antes, mientras había clientes por
+  // capturar, esta función NO llamaba a renderMovimientos() — así que las
+  // tarjetas "Movimientos de hoy" se quedaban mostrando el texto de EJEMPLO
+  // que trae el HTML de fábrica (una narrativa de un día viejo, con nombres
+  // de clientes reales de entonces) como si fuera el resultado de hoy. Ahora
+  // se renderiza SIEMPRE con los datos ya calculados de este día — los
+  // folios aún sin cliente simplemente salen como "(cliente no registrado)"
+  // hasta que se guardan, igual que ya pasa con cualquier folio viejo sin
+  // nombre capturado.
+  renderMovimientos(diff);
   if(pendientes.length===0){
     panel.style.display='none'; panel.innerHTML='';
-    renderMovimientos(diff);
     document.getElementById('btn-publicar').style.display='inline-flex';
     return;
   }

@@ -4330,6 +4330,8 @@ async function processXLS(){
     saveBreakdown(today,r.breakdown); // guarda el desglose por tipo de equipo del día
     pushToSheet(today,r); // guarda también en Google Sheets si está configurado (no bloquea si falla)
     updateDashboard(r);
+    VC_DATA = buildVCData(r); // Vista Clásica también se refresca con los datos de hoy, no solo el Autónomo
+    renderVCNumbers();
 
     // ── Snapshot serie por serie + detección de movimientos/folios nuevos ──
     // Reemplaza el cruce que antes solo hacía Claude en Python: ahora se hace
@@ -4371,8 +4373,32 @@ function catBreakdown(rows){
   }
   return b;
 }
+// Igual que catBreakdown() pero separado por tipo de contrato (LP/CP) —
+// hace falta para que Vista Clásica muestre el desglose LP/CP con datos
+// reales incluso recién abierto el archivo (antes de cargar XLS nuevos),
+// usando lo horneado en ULTIMO_BREAKDOWN.rent_lp/rent_cp.
+function catBreakdownLPCP(rowsR){
+  const lp={portatiles:0,ordenadores:0,impresoras:0,monitores:0,servidores:0,otros:0};
+  const cp={portatiles:0,ordenadores:0,impresoras:0,monitores:0,servidores:0,otros:0};
+  for(const row of rowsR){
+    const cat=(row[3]||'').toString().toUpperCase();
+    const cont=(row[12]||'').toString().toUpperCase();
+    const b = cont.startsWith('LP') ? lp : cont.startsWith('CP') ? cp : null;
+    if(!b) continue;
+    if(cat.includes('PORTATIL')||cat.includes('PORTÁTIL')) b.portatiles++;
+    else if(cat.includes('ORDENADOR')||cat.includes('DESKTOP')||cat.includes('COMPUTADORA')) b.ordenadores++;
+    else if(cat.includes('IMPRES')||cat.includes('MULTIFUNC')) b.impresoras++;
+    else if(cat.includes('MONITOR')) b.monitores++;
+    else if(cat.includes('SERVIDOR')||cat.includes('SERVER')) b.servidores++;
+    else b.otros++;
+  }
+  return {lp,cp};
+}
 function calcMetrics(rowsD,rowsR,rowsDan,rowsV,rowsB){
-  let lap_lp=0,lap_cp=0,ord_lp=0,ord_cp=0,imp_lp=0,imp_cp=0,incidencias=0;
+  // mon_lp/mon_cp/srv_lp/srv_cp: igual que lap_lp/ord_lp/imp_lp pero para
+  // Monitores y Servidores — hacían falta para que Vista Clásica (LP/CP)
+  // pudiera mostrar cifras reales en vez de números fijos.
+  let lap_lp=0,lap_cp=0,ord_lp=0,ord_cp=0,imp_lp=0,imp_cp=0,mon_lp=0,mon_cp=0,srv_lp=0,srv_cp=0,incidencias=0;
   for(const row of rowsR){
     const cat=(row[3]||'').toString().toUpperCase();
     const cont=(row[12]||'').toString().toUpperCase();
@@ -4386,9 +4412,15 @@ function calcMetrics(rowsD,rowsR,rowsDan,rowsV,rowsB){
       if(t==='LP')ord_lp++; else if(t==='CP')ord_cp++;
     }else if(cat.includes('IMPRES')||cat.includes('MULTIFUNC')){
       if(t==='LP')imp_lp++; else if(t==='CP')imp_cp++;
+    }else if(cat.includes('MONITOR')){
+      if(t==='LP')mon_lp++; else if(t==='CP')mon_cp++;
+    }else if(cat.includes('SERVIDOR')||cat.includes('SERVER')){
+      if(t==='LP')srv_lp++; else if(t==='CP')srv_cp++;
     }
   }
-  let lap_disp=0,cat_a=0,cat_b=0,cat_c=0,sin_cat=0,ord_disp=0,imp_disp=0,srv_disp=0;
+  // mon_disp: Monitores Disponibles — faltaba en este conteo dedicado
+  // (solo existía agregado dentro de catBreakdown/brk_disp).
+  let lap_disp=0,cat_a=0,cat_b=0,cat_c=0,sin_cat=0,ord_disp=0,imp_disp=0,srv_disp=0,mon_disp=0;
   for(const row of rowsD){
     const cat=(row[3]||'').toString().toUpperCase();
     const categ=(row[11]||'').toString().trim().toLowerCase();
@@ -4401,6 +4433,7 @@ function calcMetrics(rowsD,rowsR,rowsDan,rowsV,rowsB){
     }else if(cat.includes('ORDENADOR')||cat.includes('DESKTOP')||cat.includes('COMPUTADORA'))ord_disp++;
     else if(cat.includes('IMPRES')||cat.includes('MULTIFUNC'))imp_disp++;
     else if(cat.includes('SERVIDOR')||cat.includes('SERVER'))srv_disp++;
+    else if(cat.includes('MONITOR'))mon_disp++;
   }
   let lap_dano=0;
   for(const row of rowsDan){
@@ -4424,6 +4457,7 @@ function calcMetrics(rowsD,rowsR,rowsDan,rowsV,rowsB){
   const util=+((total_rent/total_inv)*100).toFixed(1);
   // Desglose por tipo de equipo (dinámico, se recalcula con cada carga de XLS)
   const brk_rent=catBreakdown(rowsR), brk_disp=catBreakdown(rowsD), brk_dano=catBreakdown(rowsDan);
+  const brk_rent_lpcp=catBreakdownLPCP(rowsR);
   const brk_inv={
     portatiles: brk_rent.portatiles+brk_disp.portatiles+brk_dano.portatiles,
     ordenadores: brk_rent.ordenadores+brk_disp.ordenadores+brk_dano.ordenadores,
@@ -4432,10 +4466,11 @@ function calcMetrics(rowsD,rowsR,rowsDan,rowsV,rowsB){
     servidores: brk_rent.servidores+brk_disp.servidores+brk_dano.servidores,
     otros: brk_rent.otros+brk_disp.otros+brk_dano.otros,
   };
-  const breakdown={inv:brk_inv, rent:brk_rent, disp:brk_disp, dano:brk_dano};
+  const breakdown={inv:brk_inv, rent:brk_rent, disp:brk_disp, dano:brk_dano, rent_lp:brk_rent_lpcp.lp, rent_cp:brk_rent_lpcp.cp};
   return{total_inv,total_disp,total_rent,total_dano,total_baja,lap_lp,lap_cp,lap_rent,lap_disp,lap_dano,
     cat_a,cat_b,cat_ab,cat_c,sin_cat,incidencias,ingreso,lp_mes,cp_mes,pot_renta,pot_venta,
-    base_m,universo,util,breakdown,vendido,vendido_equipos};
+    base_m,universo,util,breakdown,vendido,vendido_equipos,
+    ord_lp,ord_cp,imp_lp,imp_cp,mon_lp,mon_cp,srv_lp,srv_cp,ord_disp,imp_disp,srv_disp,mon_disp};
 }
 
 // ══ HISTORIAL ═════════════════════════════════════════════════
@@ -4495,6 +4530,8 @@ let ULTIMO_BREAKDOWN={
   rent: {portatiles:1217, ordenadores:199, impresoras:42,  monitores:400, servidores:8,  otros:1998},
   disp: {portatiles:1547, ordenadores:572, impresoras:122, monitores:284, servidores:25, otros:3753},
   dano: {portatiles:28,   ordenadores:2,   impresoras:2,   monitores:0,   servidores:0,  otros:16},
+  rent_lp: {portatiles:970, ordenadores:182, impresoras:38, monitores:339, servidores:3, otros:1454},
+  rent_cp: {portatiles:247, ordenadores:17,  impresoras:4,  monitores:61,  servidores:5, otros:541},
 };
 function saveBreakdown(fecha,brk){
   ULTIMO_BREAKDOWN={fecha,...brk}; // solo en memoria, para que el modal lo muestre en esta misma sesión
@@ -5235,6 +5272,11 @@ const CBODY_A=`
     <div class="header">
         <h1>Dashboard de Inventario</h1>
         <p>Versión ejecutiva completa con módulo operativo y factor dinero por flujo | Información actualizada</p>
+        <p style="font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:5px 10px;margin-top:6px;display:inline-block;">
+          ℹ️ Las cifras de las tarjetas (KPIs, LP/CP, Improductivo, ingresos) se actualizan con los XLS del día.
+          El texto de "Incidencias de Sistema" y los renglones de detalle dentro de las tarjetas grandes son un
+          <b>ejemplo ilustrativo</b> de cómo se ve un caso real — no se recalculan solos, no son el dato de hoy.
+        </p>
     </div>
 
     <!-- TOP KPIs -->
@@ -5946,7 +5988,7 @@ function svAut(v){
     const scoped=CCSS_A.replace(/\bbody\b/g,'#vc-content-a').replace(/\.container\b/g,'#vc-content-a .container');
     sty.textContent=scoped;
     document.getElementById('vc-content-a').innerHTML=CBODY_A;
-    setTimeout(injectVCClicks, 100);
+    setTimeout(()=>{ injectVCClicks(); renderVCNumbers(); }, 100);
   } else { setTimeout(redrawAll,60); }
 }
 
@@ -6251,7 +6293,15 @@ window.addEventListener('load', async ()=>{
       base_m:HIST.base_m[n-1]||0,universo:(HIST.lap_disp[n-1]||0)+(HIST.lap_rent[n-1])+(HIST.lap_dano[n-1]||0),
       util:HIST.util[n-1],
     };
+    // Desglose LP/CP y Disponible por tipo de equipo para Vista Clásica —
+    // se toma de ULTIMO_BREAKDOWN (horneado) porque HIST no guarda estas
+    // columnas día a día, solo el último corte real procesado.
+    const bkLP=(ULTIMO_BREAKDOWN&&ULTIMO_BREAKDOWN.rent_lp)||{}, bkCP=(ULTIMO_BREAKDOWN&&ULTIMO_BREAKDOWN.rent_cp)||{}, bkD=(ULTIMO_BREAKDOWN&&ULTIMO_BREAKDOWN.disp)||{};
+    r.ord_lp=bkLP.ordenadores||0; r.imp_lp=bkLP.impresoras||0; r.mon_lp=bkLP.monitores||0; r.srv_lp=bkLP.servidores||0;
+    r.ord_cp=bkCP.ordenadores||0; r.imp_cp=bkCP.impresoras||0; r.mon_cp=bkCP.monitores||0; r.srv_cp=bkCP.servidores||0;
+    r.ord_disp=bkD.ordenadores||0; r.imp_disp=bkD.impresoras||0; r.srv_disp=bkD.servidores||0; r.mon_disp=bkD.monitores||0;
     updateDashboard(r);
+    VC_DATA = buildVCData(r);
     document.getElementById('dashboard').style.display='block';
     document.getElementById('status-bar').style.display='flex';
     document.getElementById('sb-fecha').textContent=last+' · '+ULTIMA_HORA;
@@ -6266,7 +6316,7 @@ window.addEventListener('load', async ()=>{
 // ══ INTERACTIVIDAD VISTA CLÁSICA ═══════════════════════════════
 
 // Datos de cada nodo clickeable del clásico
-const VC_DATA = {
+let VC_DATA = {
   // ── PRODUCTIVO LP ──────────────────────────────────────────
   'lp-lap':  { t:'💻 Laptops LP — Rentadas', n:968,  color:'#818cf8', tipo:'LP', cat:'Portátiles', ingreso:871200,
     stats:[{l:'Unidades',v:'968'},{l:'Ingreso mes',v:'$871,200'},{l:'Tarifa unitaria',v:'$900/mes'},{l:'Contratos LP',v:'968'}],
@@ -6390,6 +6440,146 @@ const VC_DATA = {
     nota:'Equipos aún sin categorización A/B/C. Hasta no clasificarse no pueden entrar al flujo de renta ni de venta — es trabajo pendiente que retiene valor inmovilizado.',
     graf:['sin_cat','lap_disp'] },
 };
+
+// ══ VISTA CLÁSICA — CONECTADA A DATOS REALES ═══════════════════
+// Auditoría severa (08-Sep-2026): VC_DATA arriba era texto fijo, escrito a
+// mano, que nunca se recalculaba — la tarjeta decía "10,694" aunque el
+// inventario real fuera otro número. buildVCData() reconstruye las ~29
+// tarjetas con data-vckey usando SIEMPRE los datos reales del día (mismo
+// `r` que usa el tablero Autónomo, para que ambas vistas coincidan). Las
+// narrativas sueltas del árbol (p.ej. "3 Incidencias de Sistema") quedan
+// fuera a propósito — están marcadas como ejemplo ilustrativo en el HTML.
+function buildVCData(r){
+  if(!r) return VC_DATA;
+  const money = v => '$'+Math.round(v||0).toLocaleString('es-MX');
+  const num = v => (v||0).toLocaleString('es-MX');
+  const deltaTxt = (key,val) => {
+    const x = delta(key,val);
+    return x.dv===0 ? '= sin cambio' : (x.dv>0?'▲ +':'▼ -')+Math.abs(x.dv).toLocaleString('es-MX');
+  };
+  const mk = (key,n,extra) => Object.assign({}, VC_DATA[key], {n}, extra||{});
+  const lastFecha = HIST.fechas[HIST.fechas.length-1]||'';
+
+  const v = {
+    'lp-lap': mk('lp-lap', r.lap_lp, {ingreso:r.lap_lp*900,
+      stats:[{l:'Unidades',v:num(r.lap_lp)},{l:'Ingreso mes',v:money(r.lap_lp*900)},{l:'Tarifa unitaria',v:'$900/mes'},{l:'Contratos LP',v:num(r.lap_lp)}]}),
+    'lp-ord': mk('lp-ord', r.ord_lp, {ingreso:r.ord_lp*20,
+      stats:[{l:'Unidades',v:num(r.ord_lp)},{l:'Ingreso mes',v:money(r.ord_lp*20)},{l:'Tarifa unitaria',v:'$20/mes'},{l:'Contratos LP',v:num(r.ord_lp)}]}),
+    'lp-imp': mk('lp-imp', r.imp_lp, {ingreso:r.imp_lp*20,
+      stats:[{l:'Unidades',v:num(r.imp_lp)},{l:'Ingreso mes',v:money(r.imp_lp*20)},{l:'Tarifa unitaria',v:'$20/mes'},{l:'Contratos LP',v:num(r.imp_lp)}]}),
+    'lp-mon': mk('lp-mon', r.mon_lp, {ingreso:0,
+      stats:[{l:'Unidades',v:num(r.mon_lp)},{l:'Ingreso mes',v:'$0'},{l:'Nota',v:'Sin tarifa propia'},{l:'Contratos LP',v:num(r.mon_lp)}]}),
+    'lp-srv': mk('lp-srv', r.srv_lp, {ingreso:0,
+      stats:[{l:'Unidades',v:num(r.srv_lp)},{l:'Ingreso mes',v:'$0'},{l:'Nota',v:'Sin tarifa registrada'},{l:'Contratos LP',v:num(r.srv_lp)}]}),
+
+    'cp-lap': mk('cp-lap', r.lap_cp, {ingreso:r.lap_cp*900,
+      stats:[{l:'Unidades',v:num(r.lap_cp)},{l:'Ingreso mes',v:money(r.lap_cp*900)},{l:'Tarifa unitaria',v:'$900/mes'},{l:'Contratos CP',v:num(r.lap_cp)}]}),
+    'cp-ord': mk('cp-ord', r.ord_cp, {ingreso:r.ord_cp*20,
+      stats:[{l:'Unidades',v:num(r.ord_cp)},{l:'Ingreso mes',v:money(r.ord_cp*20)},{l:'Tarifa unitaria',v:'$20/mes'},{l:'Contratos CP',v:num(r.ord_cp)}]}),
+    'cp-imp': mk('cp-imp', r.imp_cp, {ingreso:r.imp_cp*20,
+      stats:[{l:'Unidades',v:num(r.imp_cp)},{l:'Ingreso mes',v:money(r.imp_cp*20)},{l:'Tarifa unitaria',v:'$20/mes'},{l:'Contratos CP',v:num(r.imp_cp)}]}),
+    'cp-mon': mk('cp-mon', r.mon_cp, {ingreso:0,
+      stats:[{l:'Unidades',v:num(r.mon_cp)},{l:'Ingreso mes',v:'$0'},{l:'Nota',v:'Sin tarifa propia'},{l:'Contratos CP',v:num(r.mon_cp)}]}),
+    'cp-srv': mk('cp-srv', r.srv_cp, {ingreso:0,
+      stats:[{l:'Unidades',v:num(r.srv_cp)},{l:'Ingreso mes',v:'$0'},{l:'Nota',v:'Sin tarifa registrada'},{l:'Contratos CP',v:num(r.srv_cp)}]}),
+
+    'imp-lap': mk('imp-lap', r.lap_disp,
+      {stats:[{l:'Unidades',v:num(r.lap_disp)},{l:'Cat A+B (renta)',v:num(r.cat_ab)},{l:'Cat C (venta)',v:num(r.cat_c)},{l:'Sin categoría',v:num(r.sin_cat)}]}),
+    'imp-ord': mk('imp-ord', r.ord_disp,
+      {stats:[{l:'Unidades',v:num(r.ord_disp)},{l:'Valor potencial',v:money(r.ord_disp*20)},{l:'Tarifa estimada',v:'$20/mes'},{l:'Estado',v:'Disponible'}]}),
+    'imp-imp': mk('imp-imp', r.imp_disp,
+      {stats:[{l:'Unidades',v:num(r.imp_disp)},{l:'Valor potencial',v:money(r.imp_disp*20)},{l:'Tarifa estimada',v:'$20/mes'},{l:'Estado',v:'Sin contrato activo'}]}),
+    'imp-srv': mk('imp-srv', r.srv_disp,
+      {stats:[{l:'Unidades',v:num(r.srv_disp)},{l:'Valor potencial',v:'$0'},{l:'Nota',v:'Sin tarifa estándar'},{l:'Estado',v:'Sin contrato activo'}]}),
+    'imp-mon': mk('imp-mon', r.mon_disp,
+      {stats:[{l:'Unidades',v:num(r.mon_disp)},{l:'Valor potencial',v:'$0'},{l:'Nota',v:'Sin tarifa independiente'},{l:'Estado',v:'Sin contrato activo'}]}),
+
+    'kpi-inv': mk('kpi-inv', r.total_inv,
+      {stats:[{l:'Total',v:num(r.total_inv)},{l:'vs anterior',v:deltaTxt('inv',r.total_inv)},{l:'Utilización',v:r.util+'%'},{l:'Fecha',v:lastFecha}]}),
+    'kpi-rent': mk('kpi-rent', r.total_rent,
+      {stats:[{l:'Rentado',v:num(r.total_rent)},{l:'vs anterior',v:deltaTxt('rent',r.total_rent)},{l:'Utilización',v:r.util+'%'},{l:'Ingreso mes',v:money(r.ingreso)}]}),
+    'kpi-disp': mk('kpi-disp', r.total_disp,
+      {stats:[{l:'Disponible',v:num(r.total_disp)},{l:'vs anterior',v:deltaTxt('disp',r.total_disp)},{l:'Base monetizable',v:money(r.base_m)},{l:'% inventario',v:(r.total_disp/r.total_inv*100).toFixed(1)+'%'}]}),
+    'kpi-dano': mk('kpi-dano', r.total_dano,
+      {stats:[{l:'Dañado',v:num(r.total_dano)},{l:'vs anterior',v:deltaTxt('dano',r.total_dano)},{l:'% inventario',v:(r.total_dano/r.total_inv*100).toFixed(2)+'%'},{l:'Laptops dañadas',v:num(r.lap_dano)}]}),
+
+    'hl-ingreso': mk('hl-ingreso', r.ingreso,
+      {stats:[{l:'Ingreso mensual',v:money(r.ingreso)},{l:'Base diaria',v:money(r.ingreso/30)},{l:'Portátiles rentadas',v:num(r.lap_rent)},{l:'vs anterior',v:deltaTxt('ingreso',r.ingreso)}]}),
+    'hl-valor': mk('hl-valor', r.base_m,
+      {stats:[{l:'Base monetizable',v:money(r.base_m)},{l:'Potencial renta A/B',v:money(r.pot_renta)},{l:'Potencial venta Cat C',v:money(r.pot_venta)},{l:'Otros (Ord/Imp/Srv)',v:money((r.ord_disp+r.imp_disp+r.srv_disp)*20)}]}),
+
+    'port-total': mk('port-total', r.universo,
+      {stats:[{l:'Total',v:num(r.universo)},{l:'LP + CP (rentadas)',v:num(r.lap_rent)},{l:'Disponibles',v:num(r.lap_disp)},{l:'Dañadas',v:num(r.lap_dano)}]}),
+    'port-rent': mk('port-rent', r.lap_rent, {ingreso:r.ingreso,
+      stats:[{l:'Rentadas',v:num(r.lap_rent)},{l:'Productividad',v:(r.universo?(r.lap_rent/r.universo*100).toFixed(1):'0')+'%'},{l:'LP',v:num(r.lap_lp)},{l:'CP',v:num(r.lap_cp)}]}),
+    'port-disp': mk('port-disp', r.lap_disp,
+      {stats:[{l:'Disponibles',v:num(r.lap_disp)},{l:'% del universo',v:(r.universo?(r.lap_disp/r.universo*100).toFixed(1):'0')+'%'},{l:'Cat A+B (renta)',v:num(r.cat_ab)},{l:'Cat C (venta)',v:num(r.cat_c)}]}),
+    'port-dano': mk('port-dano', r.lap_dano,
+      {stats:[{l:'Dañadas',v:num(r.lap_dano)},{l:'% del universo',v:(r.universo?(r.lap_dano/r.universo*100).toFixed(1):'0')+'%'},{l:'vs anterior',v:deltaTxt('lap_dano',r.lap_dano)},{l:'Pico histórico',v:num(Math.max(...HIST.lap_dano))}]}),
+    'port-ing': mk('port-ing', r.ingreso,
+      {stats:[{l:'Mensual',v:money(r.ingreso)},{l:'Diario',v:money(r.ingreso/30)},{l:'Tarifa unitaria',v:'$900/mes'},{l:'Equipos generando',v:num(r.lap_rent)}]}),
+    'port-catab': mk('port-catab', r.cat_ab,
+      {stats:[{l:'Unidades',v:num(r.cat_ab)},{l:'Potencial renta',v:money(r.pot_renta)+'/mes'},{l:'Tarifa unitaria',v:'$900/mes'},{l:'Estado',v:'Renta disponible'}]}),
+    'port-catc': mk('port-catc', r.cat_c,
+      {stats:[{l:'Unidades',v:num(r.cat_c)},{l:'Potencial venta',v:money(r.pot_venta)},{l:'Precio unitario',v:'$2,000/equipo'},{l:'Estado',v:'Depuración / venta'}]}),
+    'port-sincat': mk('port-sincat', r.sin_cat,
+      {stats:[{l:'Unidades',v:num(r.sin_cat)},{l:'Valor potencial',v:'Por definir'},{l:'Acción',v:'Categorizar'},{l:'Estado',v:'Pendiente'}]}),
+  };
+  return Object.assign({}, VC_DATA, v);
+}
+
+// Reemplaza SOLO el primer número dentro de un texto, conservando prefijos
+// ("# ", "$") y sufijos (" equipos", " / mes") tal como están en el HTML.
+function replaceFirstNumber(text, newNumStr){
+  return text.replace(/-?\d{1,3}(,\d{3})*(\.\d+)?/, newNumStr);
+}
+function updateNumberIn(el, newNumStr){
+  if(!el) return;
+  if(el.children.length===0){
+    if(/\d/.test(el.textContent)) el.textContent = replaceFirstNumber(el.textContent, newNumStr);
+    return;
+  }
+  for(const node of el.childNodes){
+    if(node.nodeType===3 && /\d/.test(node.textContent)){
+      node.textContent = replaceFirstNumber(node.textContent, newNumStr);
+      return;
+    }
+  }
+}
+// Escribe en el DOM de Vista Clásica los valores que acaba de calcular
+// buildVCData() — se llama cada vez que se abre el tab y cada vez que se
+// procesan XLS nuevos, para que nunca quede un número congelado ahí.
+function renderVCNumbers(){
+  const cont = document.getElementById('vc-content-a');
+  if(!cont) return;
+  cont.querySelectorAll('[data-vckey]').forEach(el=>{
+    const key = el.getAttribute('data-vckey');
+    const d = VC_DATA[key];
+    if(!d || typeof d.n!=='number') return;
+    const nStr = d.n.toLocaleString('es-MX');
+    const valEl = el.querySelector(':scope > .card-value, :scope > .lap-kpi-value, :scope > .n-qty');
+    if(valEl){
+      updateNumberIn(valEl, nStr);
+    } else {
+      // Mini-tarjetas LP/CP/Improductivo: [label, número, moneda] sin clase
+      // propia — se filtran los badges que injectVCClicks() agrega
+      // (.vc-badge/.vc-dot) para no confundirlos con el contenido real.
+      const plainKids = Array.from(el.children).filter(c=>!c.classList.contains('vc-badge')&&!c.classList.contains('vc-dot'));
+      if(plainKids.length===3){
+        const numEl=plainKids[1], curEl=plainKids[2];
+        if(/\d/.test(numEl.textContent)) updateNumberIn(numEl, nStr);
+        if(curEl && typeof d.ingreso==='number') updateNumberIn(curEl, Math.round(d.ingreso).toLocaleString('es-MX'));
+      }
+    }
+  });
+  // Sub-textos de las tarjetas monetarias (tienen prosa con números, no
+  // encajan en el patrón genérico de arriba).
+  const hlI=VC_DATA['hl-ingreso'], hlV=VC_DATA['hl-valor'];
+  const subI=cont.querySelector('[data-vckey="hl-ingreso"] .card-sub');
+  if(subI && hlI) subI.textContent='Base diaria: $'+Math.round(hlI.n/30).toLocaleString('es-MX')+' ('+((VC_DATA['port-rent']||{}).n||0).toLocaleString('es-MX')+' portátiles rentadas)';
+  const subV=cont.querySelector('[data-vckey="hl-valor"] .card-sub');
+  if(subV && hlV) subV.textContent='Monto base monetizable: $'+Math.round(hlV.n).toLocaleString('es-MX');
+}
 
 // Graficar en el panel flotante desde el clásico
 let vcFcKey = '';

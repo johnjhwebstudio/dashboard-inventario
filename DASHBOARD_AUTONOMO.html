@@ -101,6 +101,34 @@ MOTOR AUTÓNOMO EN EL NAVEGADOR (para que el HTML no dependa de la IA)
   - Las mensajerías/PDFs de ruta NO son parte de este motor — ese cruce
     (folio de mensajería, contacto) es un proceso aparte y no le importa
     a este Dashboard de inventario.
+
+CANDADO 28-Sep-2026 — aviso de archivo desactualizado/equivocado
+  Como este Dashboard no tiene backend, toda su memoria (SNAPSHOT_ANTERIOR,
+  CLIENTES_POR_FOLIO, HIST) vive HORNEADA dentro del propio HTML. Si se
+  cargan los 5 XLS del día sobre una copia VIEJA de este archivo (en vez
+  de la última que se descargó al darle "Publicar cambios"), esa memoria
+  queda muy atrás en el tiempo y el motor de diff interpreta CASI TODO el
+  inventario como "folio nuevo" — pidiendo miles de nombres de cliente de
+  golpe, incluyendo folios de hace años ya capturados en la copia correcta.
+  Caso real confirmado ese día: la copia correcta (memoria hasta 24-Sep,
+  75 folios guardados) sólo pedía 15 folios genuinamente nuevos/con
+  movimiento; una copia vieja (memoria de sólo el 9-Sep, 12 folios
+  guardados) pedía 2,860 — mismos 5 XLS, mismo formato de 14 columnas, sin
+  ningún cambio del ERP de por medio.
+  Se agregó (buscar "CANDADO 28-Sep-2026" en el código):
+  1. Un indicador visible en el header ("memoria-lbl") con la fecha base
+     del snapshot y cuántos folios de cliente ya tiene guardados este
+     archivo — para revisar ANTES de cargar XLS nuevos que sea la copia
+     correcta.
+  2. Un aviso bloqueante en prepararPublicacion(): si en una sola carga
+     salen más de UMBRAL_FOLIOS_SOSPECHOSO (40) folios pendientes de
+     cliente, no se muestra la lista completa de una vez — primero se
+     advierte que eso no es normal y se pide confirmar explícitamente
+     antes de continuar. Esto NO cambia la lógica de comparación (que ya
+     era correcta), sólo evita perder tiempo llenando cientos de campos
+     sin darse cuenta de que el archivo base era el equivocado.
+  Si en el futuro este candado avisa seguido con una carga que sí es
+  legítima, subir UMBRAL_FOLIOS_SOSPECHOSO en vez de quitar el aviso.
 ================================================================================
 -->
 <meta charset="UTF-8">
@@ -358,6 +386,7 @@ body:not(.light) .ct{text-shadow:0 0 10px rgba(129,140,248,.28)}
     <h1>Dashboard de Inventario</h1>
     <p id="fecha-lbl">2026-09-24 · Datos publicados: 24-Sep-2026 · 17:05 hrs · Actualizado con datos reales</p>
     <p id="reloj-vivo" style="font-size:.75rem;opacity:.6;margin:2px 0 0">🕐 Hora actual: <span id="reloj-vivo-val">17:05:02</span> · esta página está viva</p>
+    <p id="memoria-lbl" style="font-size:.72rem;opacity:.75;margin:4px 0 0;font-weight:700"></p>
   </div>
   <div class="hbts">
     <div class="btn"><span class="dlive"></span>Autónomo</div>
@@ -5996,6 +6025,7 @@ async function readXLS(file){
 async function processXLS(){
   const uz=document.getElementById('upload-zone');
   uz.querySelector('.uz-title').textContent='⏳ Procesando archivos...';
+  CONFIRMAR_MASIVO=false; // candado 28-Sep-2026: cada carga nueva vuelve a pedir confirmación si el resultado se ve sospechoso
   try{
     const [rowsD,rowsR,rowsDan,rowsV,rowsB]=await Promise.all([
       readXLS(filesLoaded.disp),
@@ -6226,6 +6256,33 @@ let SNAPSHOT_ANTERIOR = {"fecha":"2026-09-24","rentado":{"76446501":{"contrato":
 // para siempre. No se necesita para folios "SIN-FOLIO".
 let CLIENTES_POR_FOLIO = {"CP-3028":"Siemens Healthcare Diagnostics","CP-3027":"Creatividad y Espectáculos S.A. de C.V.","CP-3030":"Creatividad y Espectáculos S.A. de C.V.","CP-3032":"Operación y Comercialización Ideas Creativas S.A. de C.V.","LP-450":"Briggs Equipment S.A. de C.V.","CP-3038":"Despegar.com","LP-471":"Forklift Operations de México S.A. de C.V.","VTA-4322":"JULIO DE JESUS PEREZ OMANA","VTA-4326":"ANA PAOLA AMARO LEON","CP-3039":"OPERADORA DE CENTROS DE ESPECTACULOS","LP-833":"INDUSTRIAS VOLFRE 1998-S","LP-970":"1995-S BRIGGS EQUIPMENT","LP-728":"PERFOPARTS","LP-575":"HANDLING HEALTHCARE","LP-736":"HANDLING HEALTHCARE","LP-763":"HANDLING HEALTHCARE","VTA-4330":"HANDLING HEALTHCARE","VTA-4334":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4332":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4275":"PUBLICO EN GENERAL (PCRENT STORE)","CP-2786":"MAKE PRO SA DE CV","CP-2653":"NUEVA WAL MART DE MEXICO S. DE R.L. DE C.V.","CP-2861":"NUEVA WAL MART DE MEXICO S. DE R.L. DE C.V.","CP-3016":"EMERSON PROCESS MANAGEMENT S.A. DE C.V.","VTA-4327":"CORPORACION DE IMPORTACIONES Y EXPORTACIONES MEXICANAS S.A DE C.V","VTA-4335":"MINISTERIO VIVE","VTA-4336":"ANA PAOLA AMARO LEON","LP-713":"HANDLING HEALTHCARE S.A. DE C.V","LP-521":"HANDLING HEALTHCARE S.A. DE C.V","CP-3044":"FATIMA JIMÉNEZ PRADO","CP-3043":"NUEVA WAL MART DE MEXICO","CP-3041":"NUEVA WAL MART DE MEXICO","CP-3045":"MTING SA DE CV","LP-902":"PERFOPARTS","LP-903":"OPM IMPORT SA DE CV","CP-3040":"NUEVA WAL MART DE MEXICO","CP-3042":"NUEVA WAL MART DE MEXICO","CP-3036":"OPERADORA DE CENTROS DE ESPECTACULOS","CP-3013":"OVERALL STRATEGY","VTA-4135":"BRIGGS EQUIPMENT","VTA-4205":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4338":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-2687":"BRIGGS EQUIPMENT S.A. DE C.V.","VTA-4337":"HECTOR ROMEO ESPAÑA VARGAS","VTA-4256":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4333":"SIEMENS","CP-961":"NUEVA WAL MART DE MEXICO","LP-816":"BRIGGS EQUIPMENT","LP-1022":"OPM IMPORT SA DE CV","CP-2998":"CREATIVIDAD E INTEGRACION EN SERVICIOS","CP-2999":"CREATIVIDAD E INTEGRACION EN SERVICIOS MEDICOS","VTA-4339":"JOSE GERARDO PEÑA RODRIGUEZ","VTA-4341":"COS INFORMATICA MEXICO","LP-919":"BRIGGS EQUIPMENT","LP-692":"EDIFICACION Y PLANEACION CALZADA","LP-764":"INDUSTRIAS VOLFRE SA DE CV","CP-2984":"CONSORCIO EJECUTIVO CONTABLE Y FISCAL CECOF","LP-1023":"BRIGGS EQUIPMENT","CP-2058":"RECYCLE TECH","CP-3047":"ROADTEK SA DE CV","VTA-4305":"ANA PAOLA AMARO LEON","VTA-3831":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-4251":"SIEMENS HEALTHCARE DIAGNOSTICS","CP-2873":"CREATIVIDAD Y ESPECTACULOS SA DE CV","CP-3048":"MTING SA DE CV","CP-2982":"EMERSON PROCESS MANAGEMENT S.A. DE C.V.","CP-2920":"NUEVA WAL MART DE MEXICO","CP-3011":"CREATIVIDAD E INTEGRACION EN SERVICIOS MEDICOS","VTA-4345":"LYMSA MAQUINADOS","VTA-4346":"DAVID ABIEL GARCÍA LANDAVERDE","VTA-4301":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4344":"ANA PAOLA AMARO LEON","VTA-4347":"ANA PAOLA AMARO LEON","CP-3049":"MTING SA DE CV","VTA-4348":"PUBLICO EN GENERAL (MERCADOLIBRE)"};
 
+
+// ══ CANDADO 28-Sep-2026: aviso de archivo desactualizado/equivocado ══
+// Motivo: si se cargan los 5 XLS del día sobre una copia vieja de este
+// mismo HTML (en vez de la última que se descargó al darle "Publicar
+// cambios"), SNAPSHOT_ANTERIOR y CLIENTES_POR_FOLIO quedan muy atrás en
+// el tiempo, y el motor de diff (ver diffSnapshots/foliosPendientesDeCliente
+// más abajo) interpreta CASI TODO el inventario como "folio nuevo" —
+// pidiendo miles de nombres de cliente de golpe, incluyendo folios de
+// hace años que ya se habían capturado en la copia correcta. Caso real
+// confirmado el 28-Sep-2026: la copia correcta (memoria hasta 24-Sep,
+// 75 folios de cliente guardados) solo pedía 15 folios genuinamente
+// nuevos/con movimiento; una copia vieja (memoria de solo el 9-Sep, 12
+// folios guardados) pedía 2,860. Este candado no cambia la lógica de
+// comparación (esa sigue siendo correcta) — solo AVISA fuerte cuando el
+// resultado no parece una carga diaria normal, para detectar el problema
+// antes de perder tiempo llenando cientos de campos.
+const UMBRAL_FOLIOS_SOSPECHOSO = 40;
+let CONFIRMAR_MASIVO = false;
+
+function mostrarMemoriaArchivo(){
+  const el = document.getElementById('memoria-lbl');
+  if(!el) return;
+  const fechaBase = (typeof SNAPSHOT_ANTERIOR!=='undefined' && SNAPSHOT_ANTERIOR && SNAPSHOT_ANTERIOR.fecha) ? SNAPSHOT_ANTERIOR.fecha : 'sin snapshot base';
+  const nClientes = (typeof CLIENTES_POR_FOLIO!=='undefined' && CLIENTES_POR_FOLIO) ? Object.keys(CLIENTES_POR_FOLIO).length : 0;
+  el.textContent = '🔒 Memoria de este archivo: snapshot base ' + fechaBase + ' · ' + nClientes + ' folios de cliente ya guardados — verifica que sea la última versión publicada antes de cargar XLS nuevos';
+}
+document.addEventListener('DOMContentLoaded', mostrarMemoriaArchivo);
 
 // ══ ACTUALIZAR DASHBOARD ══════════════════════════════════════
 function n(v){return v.toLocaleString('es-MX');}
@@ -7893,6 +7950,21 @@ function prepararPublicacion(diff, snapNuevo){
   }
   document.getElementById('btn-publicar').style.display='none';
   panel.style.display='block';
+
+  // ══ CANDADO 28-Sep-2026 ══ ver nota completa junto a UMBRAL_FOLIOS_SOSPECHOSO.
+  if(pendientes.length > UMBRAL_FOLIOS_SOSPECHOSO && !CONFIRMAR_MASIVO){
+    const fechaBase = (typeof SNAPSHOT_ANTERIOR!=='undefined' && SNAPSHOT_ANTERIOR && SNAPSHOT_ANTERIOR.fecha) ? SNAPSHOT_ANTERIOR.fecha : 'desconocida';
+    const nClientes = (typeof CLIENTES_POR_FOLIO!=='undefined' && CLIENTES_POR_FOLIO) ? Object.keys(CLIENTES_POR_FOLIO).length : 0;
+    panel.innerHTML =
+      '<div class="ct" style="color:var(--ros)">🚨 Esto está pidiendo '+pendientes.length+' folios de golpe — no es normal</div>'+
+      '<div style="font-size:12px;color:var(--tx2);line-height:1.65;margin:8px 0 12px;">'+
+      'Una carga diaria normal solo debería pedir un puñado de folios (los que de verdad tuvieron movimiento desde la última vez que se publicó). Este número tan alto casi siempre significa que <b>este archivo NO es la última versión publicada</b> del dashboard: su memoria interna llega solo hasta <b>'+fechaBase+'</b> y tiene <b>'+nClientes+'</b> folios de cliente guardados.'+
+      '<br><br>Antes de continuar, verifica que abriste el HTML que descargaste la última vez que le diste <b>"Publicar cambios"</b> (no una copia anterior guardada en otra carpeta o con otro nombre). Si es el archivo correcto y de verdad hubo tantos movimientos, puedes continuar de todas formas.'+
+      '</div>'+
+      '<button class="btn" onclick="CONFIRMAR_MASIVO=true;prepararPublicacion(PENDIENTE_DIFF,PENDIENTE_SNAPSHOT);">Sí, es el archivo correcto — mostrar la lista completa de '+pendientes.length+' folios</button>';
+    return;
+  }
+
   let rows = '';
   for(const p of pendientes){
     const esNuevo = p.tipo==='nuevo';

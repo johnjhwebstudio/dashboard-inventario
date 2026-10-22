@@ -384,8 +384,8 @@ body:not(.light) .ct{text-shadow:0 0 10px rgba(129,140,248,.28)}
 <div class="hdr">
   <div class="ht">
     <h1>Dashboard de Inventario</h1>
-    <p id="fecha-lbl">2026-10-20 · Datos publicados: 20-Oct-2026 · 19:04 hrs · Actualizado con datos reales</p>
-    <p id="reloj-vivo" style="font-size:.75rem;opacity:.6;margin:2px 0 0">🕐 Hora actual: <span id="reloj-vivo-val">19:04:04</span> · esta página está viva</p>
+    <p id="fecha-lbl">2026-10-20 · Datos publicados: 21-Oct-2026 · 18:25 hrs · Actualizado con datos reales</p>
+    <p id="reloj-vivo" style="font-size:.75rem;opacity:.6;margin:2px 0 0">🕐 Hora actual: <span id="reloj-vivo-val">18:25:32</span> · esta página está viva</p>
     <p id="memoria-lbl" style="font-size:.72rem;opacity:.75;margin:4px 0 0;font-weight:700">🔒 Memoria de este archivo: snapshot base 2026-10-20 · 162 folios de cliente ya guardados — verifica que sea la última versión publicada antes de cargar XLS nuevos</p>
   </div>
   <div class="hbts">
@@ -415,7 +415,7 @@ body:not(.light) .ct{text-shadow:0 0 10px rgba(129,140,248,.28)}
 
 <!-- STATUS BAR (oculto hasta tener datos) -->
 <div id="status-bar" style="display: flex;">
-  <div class="sb-item">📅 Fecha: <span class="sb-val" id="sb-fecha">2026-10-20 · 19:04 hrs</span></div>
+  <div class="sb-item">📅 Fecha: <span class="sb-val" id="sb-fecha">2026-10-20 · 18:25 hrs</span></div>
   <div class="sb-sep">·</div>
   <div class="sb-item">Registros: <span class="sb-val" id="sb-regs">10,211 equipos</span></div>
   <div class="sb-sep">·</div>
@@ -6377,8 +6377,8 @@ function loadHistory(){ /* deshabilitado a propósito: siempre se usa la semilla
 // alguien arrastra XLS en su propia pestaña (en memoria, no persiste al recargar).
 // Fecha + hora reales en que Claude generó esta actualización (se hornea cada entrega;
 // el negocio se procesa un día y se presenta al siguiente, por eso queda registrada la hora exacta).
-let ULTIMA_ACTUALIZACION='20-Oct-2026 · 19:04 hrs';
-let ULTIMA_HORA='19:04 hrs';
+let ULTIMA_ACTUALIZACION='21-Oct-2026 · 18:25 hrs';
+let ULTIMA_HORA='18:25 hrs';
 let ULTIMO_BREAKDOWN={"fecha":"2026-10-20","inv":{"portatiles":2699,"ordenadores":800,"impresoras":165,"monitores":710,"servidores":32,"otros":5805},"rent":{"portatiles":1317,"ordenadores":251,"impresoras":56,"monitores":516,"servidores":8,"otros":2224},"disp":{"portatiles":1366,"ordenadores":549,"impresoras":108,"monitores":194,"servidores":24,"otros":3579},"dano":{"portatiles":16,"ordenadores":0,"impresoras":1,"monitores":0,"servidores":0,"otros":2},"rent_lp":{"portatiles":978,"ordenadores":180,"impresoras":40,"monitores":341,"servidores":3,"otros":1441},"rent_cp":{"portatiles":339,"ordenadores":71,"impresoras":16,"monitores":175,"servidores":5,"otros":781}};
 function saveBreakdown(fecha,brk){
   ULTIMO_BREAKDOWN={fecha,...brk}; // solo en memoria, para que el modal lo muestre en esta misma sesión

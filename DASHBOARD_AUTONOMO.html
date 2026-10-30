@@ -78,6 +78,36 @@ NO HACER
   - No sobrescribir HIST: siempre append.
   - No mezclar BAJA/VENDIDO dentro del inventario activo.
 
+CORRECCIÓN 30-Oct-2026 — equipo "por volumen" (sin serie) y bitácora de
+movimientos (buscar "30-Oct-2026" en el código para los 5 cambios exactos)
+  - buildSnapshot() ya NO descarta filas sin número de serie (columna 6).
+    Antes esto hacía que un artículo dado de alta "por volumen" en el ERP
+    (sin serie propia — caso real: VTA-4392 de Briggs Equipment) desapareciera
+    por completo del motor de diff, aunque SÍ contaba en los totales/KPIs.
+    Ahora se le arma una llave sintética VOL::<folio>::<n> para que entre al
+    mismo mecanismo de comparación por folio que usan Rentado/Vendido.
+  - buildSnapshot() también captura la columna 8 (#Ord. Compra) como `oc` en
+    cada registro del snapshot — diffSnapshots() la propaga a cada
+    "movimiento" detectado, y renderMovimientos() la muestra junto a los
+    folios/artículos nuevos (Rentado, Disponible, Dañado, Vendido) para que
+    quede claro CUÁNDO un "+" es una transición interna entre categorías y
+    cuándo es equipo genuinamente nuevo por compra (con su OC si el archivo
+    la trae).
+  - Las tarjetas "Movimientos de hoy" de Disponible y Dañado antes exigían
+    `m.from` (historial previo de esa serie) para contar una entrada — un
+    ingreso nuevo sin historial (serie nunca vista, ej. recién comprado) se
+    perdía silenciosamente, y por eso el "neto" de esas tarjetas podía no
+    cuadrar contra el delta real del KPI de arriba. Ya corregido.
+  - Nueva bitácora acumulada, append-only igual que HIST: HIST_MOV_VENDIDO y
+    HIST_MOV_DANADO (buscar "let HIST_MOV_VENDIDO"). Se llenan UNA sola vez
+    por carga vía registrarBitacoraMovimientos(diff), llamada desde
+    processXLS() — nunca dentro de renderMovimientos(), porque esa función se
+    vuelve a ejecutar cada vez que se captura un cliente pendiente y
+    duplicaría filas. Sirven para que las tarjetas de Vendido y Dañado
+    muestren los últimos 3 movimientos registrados aunque hoy no haya habido
+    ninguno, en vez de quedar vacías. exportarHTMLActualizado() las hornea
+    igual que SNAPSHOT_ANTERIOR/CLIENTES_POR_FOLIO al publicar.
+
 MOTOR AUTÓNOMO EN EL NAVEGADOR (para que el HTML no dependa de la IA)
   Este archivo ya trae, embebido, todo lo necesario para que cualquier
   persona actualice el Dashboard arrastrando los 5 XLS del día en la zona
@@ -1295,9 +1325,9 @@ body:not(.light) .ct{text-shadow:0 0 10px rgba(129,140,248,.28)}
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:-6px 0 18px;align-items:start;">
   <div></div>
   <div id="mov-card-rent" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--grn);margin-bottom:8px;">↕ Movimientos de hoy · Rentado <span style="color:var(--tx3);font-weight:600;">(+152 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;max-height:230px;overflow-y:auto;"><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3085</b> nuevo contrato — <b>NUEVA WAL MART DE MEXICO</b> — 50 equipos</div><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3084</b> nuevo contrato — <b>NUEVA WAL MART DE MEXICO</b> — 50 equipos</div><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3083</b> nuevo contrato — <b>NUEVA WAL MART DE MEXICO</b> — 50 equipos</div><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3086</b> nuevo contrato — <b>CREATIVIDAD E INTEGRACION EN SERVICIOS MEDICOS</b> — 2 equipos</div></div><div style="text-align:center;margin-top:8px;display:flex;gap:10px;justify-content:center;"><span style="font-size:9px;color:var(--grn);cursor:pointer;font-weight:700;" onclick="document.getElementById('full-cp').open=true;document.getElementById('full-cp').scrollIntoView({behavior:'smooth'});">Ver CP completos ▾</span><span style="font-size:9px;color:var(--ros);cursor:pointer;font-weight:700;" onclick="document.getElementById('full-lp').open=true;document.getElementById('full-lp').scrollIntoView({behavior:'smooth'});">Ver LP completos ▾</span></div></div>
-  <div id="mov-card-disp" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--amb);margin-bottom:8px;">↕ Movimientos de hoy · Disponible <span style="color:var(--tx3);font-weight:600;">(-152 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;"><div style="margin-bottom:4px;"><b style="color:var(--ros);">−152</b> salieron a Rentado</div></div></div>
+  <div id="mov-card-disp" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--amb);margin-bottom:8px;">↕ Movimientos de hoy · Disponible <span style="color:var(--tx3);font-weight:600;">(-151 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;"><div style="margin-bottom:4px;"><b style="color:var(--ros);">−152</b> salieron a Rentado (contratos NUEVA WAL MART / CREATIVIDAD E INTEGRACION, ver tarjeta Rentado)</div><div style="margin-bottom:4px;"><b style="color:var(--grn);">+1</b> ingreso nuevo por compra — sin # de OC capturado ese día</div><div style="font-size:9px;color:var(--tx3);margin-top:6px;">📌 30-Oct: nota de corrección — el motor que genera esta tarjeta tenía un error (ya corregido para la próxima carga de XLS) que no contaba un ingreso nuevo sin historial previo; por eso antes se veía "-152 neto" aquí sin cuadrar con el "▼151 vs anterior" del KPI de arriba. El neto real de ese día es -151 (-152 que salieron a Rentado +1 que entró nuevo), igual que el KPI. No se puede identificar cuál fue esa 1 unidad nueva en retrospectiva porque ese día no se guardó el # de serie/OC en el motor.</div></div></div>
   <div id="mov-card-dano" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--ros);margin-bottom:8px;">↕ Movimientos de hoy · Dañado <span style="color:var(--tx3);font-weight:600;">(+0 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;"><div style="color:var(--tx3);">Sin cambios hoy.</div></div></div>
-  <div id="mov-card-vendido" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#a78bfa;margin-bottom:8px;">✨ Ventas de hoy · Vendido (VTA) <span style="color:var(--tx3);font-weight:600;">(0 folios)</span></div><div style="font-size:9.5px;color:var(--tx3);">Sin folios VTA nuevos hoy.</div><div style="text-align:center;margin-top:8px;"><span style="font-size:9px;color:#a78bfa;cursor:pointer;font-weight:700;" onclick="document.getElementById('full-vta').open=true;document.getElementById('full-vta').scrollIntoView({behavior:'smooth'});">Ver folios VTA completos ▾</span></div></div>
+  <div id="mov-card-vendido" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#a78bfa;margin-bottom:8px;">✨ Ventas de hoy · Vendido (VTA) <span style="color:var(--tx3);font-weight:600;">(0 folios)</span></div><div style="font-size:9.5px;color:var(--tx3);">Sin folios VTA nuevos hoy.</div><div style="font-size:9px;color:var(--tx3);margin-top:8px;">📌 30-Oct: nota de corrección — la venta VTA-4392 (Briggs) no aparecía aquí porque ese artículo se dio de alta "por volumen" (sin número de serie propio en el ERP), y el motor anterior ignoraba por completo cualquier fila sin serie. Ya se corrigió para la próxima carga de los 5 XLS — los equipos por volumen ahora sí se comparan día a día. No se agrega esa venta a este reporte ya publicado porque no se guardó el detalle (folio/fecha exacta) necesario antes de la corrección.</div><div style="text-align:center;margin-top:8px;"><span style="font-size:9px;color:#a78bfa;cursor:pointer;font-weight:700;" onclick="document.getElementById('full-vta').open=true;document.getElementById('full-vta').scrollIntoView({behavior:'smooth'});">Ver folios VTA completos ▾</span></div></div>
 </div>
 
 <!-- ═══ VENTAS (VTA) — RESUMEN, ancho completo ═══ -->
@@ -1308,6 +1338,12 @@ body:not(.light) .ct{text-shadow:0 0 10px rgba(129,140,248,.28)}
     <div style="background:var(--s2);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:18px;font-weight:900;color:var(--tx2);">14,645</div><div style="font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;">Equipos vendidos (histórico)</div></div>
   </div>
   <div style="font-size:9.5px;color:var(--tx3);margin-top:8px;">1 folio nuevo hoy contra la línea base del 04-Sep: VTA-4323, pendiente de captura de cliente/contacto en el ERP (Órdenes Cliente). VTA-4321 tuvo una corrección de serie (no es venta adicional).</div>
+</div>
+
+
+<!-- ═══ DISTRIBUCIÓN POR CLIENTE (30-Oct-2026) — nombres agrupados, flag de folios sin cliente capturado ═══ -->
+<div class="card" style="margin-bottom:18px;" id="client-dist-panel">
+  <div class="ct" style="margin-bottom:4px;">👥 Distribución por cliente <small style="font-size:9px;color:var(--tx3);font-weight:400">(Rentado, top 12, nombres agrupados)</small></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">Briggs Equipment S.A. de C.V.</b><div style="font-size:8.5px;color:var(--tx3);">10 folios</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">740</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">16.6%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">NUEVA WAL MART DE MEXICO S. DE R.L. DE C.V.</b><div style="font-size:8.5px;color:var(--tx3);">14 folios</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">366</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">8.2%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">DLL LEASING</b><div style="font-size:8.5px;color:var(--tx3);">2 folios</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">248</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">5.6%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">SICONT MEX</b><div style="font-size:8.5px;color:var(--tx3);">1 folio</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">192</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">4.3%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">EMERSON PROCESS MANAGEMENT S.A. DE C.V.</b><div style="font-size:8.5px;color:var(--tx3);">6 folios</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">76</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">1.7%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">LP-978</b> <span style="color:var(--ambar,#f59e0b);font-weight:700;">⚠ cliente sin capturar</span><div style="font-size:8.5px;color:var(--tx3);">1 folio</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">71</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">1.6%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">LP-947</b> <span style="color:var(--ambar,#f59e0b);font-weight:700;">⚠ cliente sin capturar</span><div style="font-size:8.5px;color:var(--tx3);">1 folio</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">66</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">1.5%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">LP-899</b> <span style="color:var(--ambar,#f59e0b);font-weight:700;">⚠ cliente sin capturar</span><div style="font-size:8.5px;color:var(--tx3);">1 folio</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">60</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">1.3%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">LP-868</b> <span style="color:var(--ambar,#f59e0b);font-weight:700;">⚠ cliente sin capturar</span><div style="font-size:8.5px;color:var(--tx3);">1 folio</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">58</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">1.3%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">LP-815</b> <span style="color:var(--ambar,#f59e0b);font-weight:700;">⚠ cliente sin capturar</span><div style="font-size:8.5px;color:var(--tx3);">1 folio</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">56</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">1.3%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">LP-817</b> <span style="color:var(--ambar,#f59e0b);font-weight:700;">⚠ cliente sin capturar</span><div style="font-size:8.5px;color:var(--tx3);">1 folio</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">52</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">1.2%</div></div><div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);"><div style="flex:1;min-width:0;"><b style="font-size:10.5px;">LP-961</b> <span style="color:var(--ambar,#f59e0b);font-weight:700;">⚠ cliente sin capturar</span><div style="font-size:8.5px;color:var(--tx3);">1 folio</div></div><div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">45</div><div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">1.0%</div></div><div style="font-size:9px;color:var(--ambar,#f59e0b);margin-top:8px;">⚠ 2,521 equipos rentados en 428 folios sin nombre de cliente capturado — se piden en el panel de "Folios pendientes de cliente" la próxima vez que ese folio tenga movimiento.</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════ -->
@@ -6226,6 +6262,7 @@ async function processXLS(){
     // aquí mismo, comparando contra SNAPSHOT_ANTERIOR (horneado en este HTML).
     const snapNuevo = buildSnapshot(today, rowsD, rowsR, rowsDan, rowsV, rowsB);
     const diff = diffSnapshots(SNAPSHOT_ANTERIOR, snapNuevo);
+    registrarBitacoraMovimientos(diff); // bitácora Vendido/Dañado — una sola vez por carga, ver nota en la función
     prepararPublicacion(diff, snapNuevo);
 
     uz.className='upload-zone done';
@@ -6450,6 +6487,18 @@ let CLIENTES_POR_FOLIO = {"CP-3028":"Siemens Healthcare Diagnostics","CP-3027":"
 // antes de perder tiempo llenando cientos de campos.
 const UMBRAL_FOLIOS_SOSPECHOSO = 40;
 let CONFIRMAR_MASIVO = false;
+
+// ══ BITÁCORA DE MOVIMIENTOS — Vendido y Dañado (30-Oct-2026) ══════════
+// Horneada igual que HIST/CLIENTES_POR_FOLIO: crece con cada "Publicar
+// cambios" (append-only, nunca se sobrescribe). Antes, las tarjetas de
+// "Movimientos de hoy" de Vendido y Dañado solo sabían del día actual vs.
+// SNAPSHOT_ANTERIOR — en cuanto pasaba un día sin movimiento, no quedaba
+// ningún rastro de qué fue lo último que sí se movió. Esta bitácora guarda
+// los últimos movimientos reales (folio/artículo + fecha) para que el panel
+// pueda mostrar "últimos movimientos" aunque hoy no haya nada nuevo. Se
+// limita a los últimos 50 registros por sección para no inflar el archivo.
+let HIST_MOV_VENDIDO = [];
+let HIST_MOV_DANADO = [];
 
 function mostrarMemoriaArchivo(){
   const el = document.getElementById('memoria-lbl');
@@ -7918,25 +7967,50 @@ function vcChartA(key){
 function buildSnapshot(fecha, rowsD, rowsR, rowsDan, rowsV, rowsB){
   const foliar = c => { c=(c||'').toString().trim().toUpperCase(); return (c===''||c==='0') ? 'SIN-FOLIO' : c; };
   const snap = {fecha, rentado:{}, disponible:{}, danado:{}, vendido:{}, baja:{}};
+  // 30-Oct-2026: equipo dado de alta "por volumen" (sin número de serie
+  // propio en el ERP — ej. VTA-4392 de Briggs) antes se perdía del motor de
+  // diff por completo: buildSnapshot() saltaba cualquier fila sin serie
+  // (`if(!serie) continue`), así que nunca se comparaba día a día aunque SÍ
+  // contaba en los totales/KPIs — por eso una venta así podía "desaparecer"
+  // del panel de Movimientos aunque el número total (Vendido) sí la traía.
+  // Ahora, a una fila sin serie se le arma una llave sintética
+  // VOL::<folio/artículo>::<n> (un contador que arranca en 1 en cada carga,
+  // por folio+categoría) para que entre al mismo mecanismo de comparación
+  // por folio que ya usan Rentado/Vendido. No pretende rastrear la MISMA
+  // unidad física día a día (no tiene serie real para eso) — lo que sí
+  // logra es detectar correctamente cuántas unidades de volumen entraron o
+  // salieron de un folio entre una carga y la siguiente.
+  const volCounters = {};
+  const claveFila = (cat, serieRaw, agrupador) => {
+    const serie = (serieRaw||'').toString().trim();
+    if(serie) return serie;
+    const k = cat+'::'+agrupador;
+    volCounters[k] = (volCounters[k]||0)+1;
+    return 'VOL::'+agrupador+'::'+volCounters[k];
+  };
   for(const row of (rowsR||[])){
-    const serie=(row[6]||'').toString().trim(); if(!serie) continue;
-    snap.rentado[serie] = {contrato:foliar(row[12]), categoria:(row[3]||'').toString().toUpperCase(), articulo:(row[2]||'').toString()};
+    const folio=foliar(row[12]);
+    const key=claveFila('rentado', row[6], folio);
+    snap.rentado[key] = {contrato:folio, categoria:(row[3]||'').toString().toUpperCase(), articulo:(row[2]||'').toString(), oc:(row[8]||'').toString().trim()};
   }
   for(const row of (rowsD||[])){
-    const serie=(row[6]||'').toString().trim(); if(!serie) continue;
-    snap.disponible[serie] = {categoria:(row[3]||'').toString().toUpperCase(), articulo:(row[2]||'').toString()};
+    const key=claveFila('disponible', row[6], (row[2]||'').toString());
+    snap.disponible[key] = {categoria:(row[3]||'').toString().toUpperCase(), articulo:(row[2]||'').toString(), oc:(row[8]||'').toString().trim()};
   }
   for(const row of (rowsDan||[])){
-    const serie=(row[6]||'').toString().trim(); if(!serie) continue;
-    snap.danado[serie] = {categoria:(row[3]||'').toString().toUpperCase(), articulo:(row[2]||'').toString(), extra:foliar(row[12])};
+    const folio=foliar(row[12]);
+    const key=claveFila('danado', row[6], folio);
+    snap.danado[key] = {categoria:(row[3]||'').toString().toUpperCase(), articulo:(row[2]||'').toString(), extra:folio, oc:(row[8]||'').toString().trim()};
   }
   for(const row of (rowsV||[])){
-    const serie=(row[6]||'').toString().trim(); if(!serie) continue;
-    snap.vendido[serie] = {contrato:foliar(row[12]), categoria:(row[3]||'').toString().toUpperCase(), articulo:(row[2]||'').toString()};
+    const folio=foliar(row[12]);
+    const key=claveFila('vendido', row[6], folio);
+    snap.vendido[key] = {contrato:folio, categoria:(row[3]||'').toString().toUpperCase(), articulo:(row[2]||'').toString(), oc:(row[8]||'').toString().trim()};
   }
   for(const row of (rowsB||[])){
-    const serie=(row[6]||'').toString().trim(); if(!serie) continue;
-    snap.baja[serie] = {categoria:(row[3]||'').toString().toUpperCase(), articulo:(row[2]||'').toString(), extra:foliar(row[12])};
+    const folio=foliar(row[12]);
+    const key=claveFila('baja', row[6], folio);
+    snap.baja[key] = {categoria:(row[3]||'').toString().toUpperCase(), articulo:(row[2]||'').toString(), extra:folio, oc:(row[8]||'').toString().trim()};
   }
   return snap;
 }
@@ -7955,7 +8029,7 @@ function ubicaciones(snap){
       const it = obj[serie];
       const folioRaw = it.contrato != null ? it.contrato : it.extra;
       const folio = (cat==='disponible') ? null : normFolio(folioRaw);
-      loc[serie] = {cat, folio, categoria:it.categoria, articulo:it.articulo};
+      loc[serie] = {cat, folio, categoria:it.categoria, articulo:it.articulo, oc: it.oc||''};
     }
   }
   return loc;
@@ -7985,7 +8059,7 @@ function diffSnapshots(prev, curr){
     const ck = c ? (c.cat+'|'+(c.folio||'')) : null;
     if(pk !== ck){
       const base = c || p;
-      movimientos.push({serie, articulo:base.articulo, categoria:base.categoria,
+      movimientos.push({serie, articulo:base.articulo, categoria:base.categoria, oc: base.oc||'',
         from: p ? {cat:p.cat, folio:p.folio} : null, to: c ? {cat:c.cat, folio:c.folio} : null});
     }
   }
@@ -7999,15 +8073,101 @@ function diffSnapshots(prev, curr){
   return {movimientos, foliosNuevos, foliosHoyRent, foliosHoyVta, foliosAyerRent, foliosAyerVta};
 }
 
+// ══ DISTRIBUCIÓN POR CLIENTE (30-Oct-2026) ═══════════════════════════
+// El mismo cliente aparecía partido en varias filas por variantes de forma
+// del nombre (ej. "BRIGGS EQUIPMENT", "1995-S BRIGGS EQUIPMENT", "Briggs
+// Equipment S.A. de C.V.") — normalizarClienteKey() agrupa esas variantes
+// bajo una sola llave (sin acentos, sin razón social SA DE CV/S DE RL DE
+// CV, sin prefijos de código interno tipo "1995-S ") sin perder el nombre
+// más completo para mostrar en pantalla.
+function normalizarClienteKey(nombre){
+  let n = (nombre||'').toString().toUpperCase();
+  n = n.normalize('NFD').replace(/[̀-ͯ]/g,'');
+  n = n.replace(/^\d{2,6}-[A-Z]\s+/,'');
+  n = n.replace(/\b(S\.?A\.?\s*DE\s*C\.?V\.?|S\.?\s*DE\s*R\.?L\.?\s*DE\s*C\.?V\.?|SA DE CV|DE C\.?V\.?)\b/g,'');
+  n = n.replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  return n;
+}
+function distribucionClientes(snap){
+  const agg = {};
+  for(const serie in (snap.rentado||{})){
+    const it = snap.rentado[serie];
+    const folio = it.contrato || 'SIN-FOLIO';
+    const raw = CLIENTES_POR_FOLIO[folio];
+    const display = raw || folio;
+    const key = raw ? normalizarClienteKey(display) : ('__SINCLIENTE__'+folio);
+    if(!agg[key]) agg[key] = {qty:0, folios:new Set(), display, sinCliente:0};
+    const a = agg[key];
+    a.qty++; a.folios.add(folio);
+    if(!raw) a.sinCliente++;
+    if(raw && display.length > (a.display||'').length) a.display = display;
+  }
+  return Object.values(agg).sort((x,y)=>y.qty-x.qty);
+}
+function renderDistribucionClientes(snap){
+  const el = document.getElementById('client-dist-panel'); if(!el) return;
+  const dist = distribucionClientes(snap);
+  const totalRent = dist.reduce((s,a)=>s+a.qty,0);
+  const top = dist.slice(0,12);
+  const sinCliente = dist.filter(a=>a.sinCliente>0);
+  const totalSin = sinCliente.reduce((s,a)=>s+a.sinCliente,0);
+  let rows = top.map(a=>{
+    const pct = totalRent>0 ? ((a.qty/totalRent)*100).toFixed(1) : '0';
+    const warn = a.sinCliente>0 ? ' <span style="color:var(--ambar,#f59e0b);font-weight:700;">⚠ cliente sin capturar</span>' : '';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--brd);">'+
+      '<div style="flex:1;min-width:0;"><b style="font-size:10.5px;">'+a.display+'</b>'+warn+'<div style="font-size:8.5px;color:var(--tx3);">'+a.folios.size+' folio'+(a.folios.size===1?'':'s')+'</div></div>'+
+      '<div style="font-size:11px;font-weight:800;min-width:46px;text-align:right;">'+a.qty.toLocaleString()+'</div>'+
+      '<div style="font-size:9px;color:var(--tx3);min-width:40px;text-align:right;">'+pct+'%</div></div>';
+  }).join('');
+  const footer = totalSin>0
+    ? '<div style="font-size:9px;color:var(--ambar,#f59e0b);margin-top:8px;">⚠ '+totalSin.toLocaleString()+' equipos rentados en '+sinCliente.length+' folio'+(sinCliente.length===1?'':'s')+' sin nombre de cliente capturado — se piden en el panel de "Folios pendientes de cliente" la próxima vez que ese folio tenga movimiento.</div>'
+    : '';
+  el.innerHTML = '<div class="ct" style="margin-bottom:4px;">👥 Distribución por cliente <small style="font-size:9px;color:var(--tx3);font-weight:400">(Rentado, top 12, nombres agrupados)</small></div>'+rows+footer;
+}
+
 function nombreCliente(folio){
   if(!folio || folio==='SIN-FOLIO') return 'Sin folio';
   return CLIENTES_POR_FOLIO[folio] || (folio+' (cliente no registrado)');
 }
 
-function renderMovimientos(diff){
-  const CATLBL = {rentado:'Rentado', disponible:'Disponible', danado:'Dañado', vendido:'Vendido', baja:'Baja'};
+// Etiquetas de categoría compartidas por renderMovimientos() y
+// registrarBitacoraMovimientos() — hoisted a nivel de módulo (30-Oct-2026).
+const CATLBL = {rentado:'Rentado', disponible:'Disponible', danado:'Dañado', vendido:'Vendido', baja:'Baja'};
 
+// ══ BITÁCORA (30-Oct-2026) ═══════════════════════════════════════════
+// Registra en HIST_MOV_VENDIDO/HIST_MOV_DANADO los movimientos del día UNA
+// sola vez por carga (marca diff._bitacoraRegistrada) — renderMovimientos()
+// se vuelve a llamar cada vez que se captura un cliente pendiente
+// (guardarClienteFolio -> prepararPublicacion -> renderMovimientos), y si la
+// bitácora se llenara ahí mismo quedaría duplicando filas en cada captura.
+function registrarBitacoraMovimientos(diff){
+  if(!diff || diff._bitacoraRegistrada) return;
+  diff._bitacoraRegistrada = true;
+  const fechaHoy = HIST.fechas[HIST.fechas.length-1] || todayStr();
+  const ocsPorFolioVta = {};
+  for(const m of diff.movimientos){ if(m.to && m.to.cat==='vendido' && m.oc){ const f=m.to.folio; (ocsPorFolioVta[f]=ocsPorFolioVta[f]||new Set()).add(m.oc); } }
+  const foliosVtaSet = new Set([...Object.keys(diff.foliosHoyVta||{}), ...Object.keys(diff.foliosAyerVta||{})]);
+  for(const folio of foliosVtaSet){
+    if(folio==='SIN-FOLIO') continue;
+    const hoy=(diff.foliosHoyVta||{})[folio]||0, ayer=(diff.foliosAyerVta||{})[folio]||0;
+    if(hoy===ayer) continue;
+    HIST_MOV_VENDIDO.push({fecha:fechaHoy, folio, cliente:nombreCliente(folio), n:hoy, delta:hoy-ayer,
+      oc: ocsPorFolioVta[folio] ? Array.from(ocsPorFolioVta[folio]).join(', ') : ''});
+  }
+  if(HIST_MOV_VENDIDO.length>50) HIST_MOV_VENDIDO.splice(0, HIST_MOV_VENDIDO.length-50);
+  for(const m of diff.movimientos){
+    if(m.to && m.to.cat==='danado' && (!m.from || m.from.cat!==m.to.cat)){
+      const origen = m.from ? (CATLBL[m.from.cat]||m.from.cat) : ('compra nueva'+(m.oc?(' — OC: '+m.oc):''));
+      HIST_MOV_DANADO.push({fecha:fechaHoy, articulo:m.articulo, origen});
+    }
+  }
+  if(HIST_MOV_DANADO.length>50) HIST_MOV_DANADO.splice(0, HIST_MOV_DANADO.length-50);
+}
+
+function renderMovimientos(diff){
   // ── Rentado: delta por folio (LP/CP) ──
+  const ocsPorFolioRent = {};
+  for(const m of diff.movimientos){ if(m.to && m.to.cat==='rentado' && m.oc){ const f=m.to.folio; (ocsPorFolioRent[f]=ocsPorFolioRent[f]||new Set()).add(m.oc); } }
   const foliosSet = new Set([...Object.keys(diff.foliosHoyRent), ...Object.keys(diff.foliosAyerRent)]);
   let rentLines = [], rentNeto = 0;
   for(const folio of foliosSet){
@@ -8017,13 +8177,15 @@ function renderMovimientos(diff){
     if(delta===0) continue;
     rentNeto += delta;
     const cli = nombreCliente(folio);
+    const ocs = ocsPorFolioRent[folio] ? Array.from(ocsPorFolioRent[folio]) : [];
+    const ocTxt = ocs.length ? ' — OC: '+ocs.join(', ') : '';
     if(ayer===0){
-      rentLines.push('<div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ '+folio+'</b> nuevo contrato — <b>'+cli+'</b> — '+hoy+' equipo'+(hoy===1?'':'s')+'</div>');
+      rentLines.push('<div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ '+folio+'</b> nuevo contrato — <b>'+cli+'</b> — '+hoy+' equipo'+(hoy===1?'':'s')+ocTxt+'</div>');
     } else if(hoy===0){
       rentLines.push('<div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ '+folio+'</b> — <b>'+cli+'</b> — retiro completo, −'+ayer+' equipo'+(ayer===1?'':'s')+'</div>');
     } else {
       const arrow = delta>0?'▲':'▼', color = delta>0?'var(--grn)':'var(--ros)', ad=Math.abs(delta);
-      rentLines.push('<div style="margin-bottom:6px;"><b style="color:'+color+';">'+arrow+' '+folio+'</b> — <b>'+cli+'</b> — '+(delta>0?'+':'−')+ad+' equipo'+(ad===1?'':'s')+' (de '+ayer+' a '+hoy+')</div>');
+      rentLines.push('<div style="margin-bottom:6px;"><b style="color:'+color+';">'+arrow+' '+folio+'</b> — <b>'+cli+'</b> — '+(delta>0?'+':'−')+ad+' equipo'+(ad===1?'':'s')+' (de '+ayer+' a '+hoy+')'+ocTxt+'</div>');
     }
   }
   if(rentLines.length===0) rentLines.push('<div style="color:var(--tx3);">Sin cambios de folio hoy.</div>');
@@ -8033,40 +8195,109 @@ function renderMovimientos(diff){
     '<div style="text-align:center;margin-top:8px;display:flex;gap:10px;justify-content:center;"><span style="font-size:9px;color:var(--grn);cursor:pointer;font-weight:700;" onclick="document.getElementById(\'full-cp\').open=true;document.getElementById(\'full-cp\').scrollIntoView({behavior:\'smooth\'});">Ver CP completos ▾</span><span style="font-size:9px;color:var(--ros);cursor:pointer;font-weight:700;" onclick="document.getElementById(\'full-lp\').open=true;document.getElementById(\'full-lp\').scrollIntoView({behavior:\'smooth\'});">Ver LP completos ▾</span></div>';
 
   // ── Disponible: flujo neto por categoría de origen/destino ──
-  const entra = {}, sale = {};
+  // 30-Oct-2026: antes esta cuenta exigía "m.from" (un registro previo de
+  // esa misma serie en CUALQUIER categoría) para contar una entrada — una
+  // unidad genuinamente nueva (sin historial previo, ej. recién comprada)
+  // que aparece directo en Disponible se perdía silenciosamente, y por eso
+  // el "neto" de este panel no cuadraba contra el KPI (Disponible ▼151 vs
+  // anterior real, mientras aquí se mostraba ▼152, sin que apareciera en
+  // ningún lado el +1 que lo explicaba). Ahora un ingreso sin historial se
+  // cuenta aparte como "nuevo por compra", con su # de OC si el archivo lo
+  // trae — así el neto de esta tarjeta siempre cuadra con el KPI.
+  const entra = {}, sale = {}; const ocsNuevoDisp = {};
   for(const m of diff.movimientos){
-    if(m.to && m.to.cat==='disponible' && m.from && m.from.cat!==m.to.cat){ entra[m.from.cat]=(entra[m.from.cat]||0)+1; }
+    if(m.to && m.to.cat==='disponible' && (!m.from || m.from.cat!==m.to.cat)){
+      const origen = m.from ? m.from.cat : 'nuevo';
+      entra[origen]=(entra[origen]||0)+1;
+      if(origen==='nuevo' && m.oc) ocsNuevoDisp[m.oc]=true;
+    }
     if(m.from && m.from.cat==='disponible' && m.to && m.from.cat!==m.to.cat){ sale[m.to.cat]=(sale[m.to.cat]||0)+1; }
   }
   let dispLines = [], dispNeto=0;
-  for(const cat in entra){ dispLines.push('<div style="margin-bottom:4px;"><b style="color:var(--grn);">+'+entra[cat]+'</b> regresaron de '+(CATLBL[cat]||cat)+'</div>'); dispNeto+=entra[cat]; }
+  for(const cat in entra){
+    if(cat==='nuevo'){
+      const ocs = Object.keys(ocsNuevoDisp);
+      const ocTxt = ocs.length ? ' — OC: '+ocs.join(', ') : ' — sin # de OC en el archivo';
+      dispLines.push('<div style="margin-bottom:4px;"><b style="color:var(--grn);">+'+entra[cat]+'</b> ingreso nuevo por compra'+ocTxt+'</div>');
+    } else {
+      dispLines.push('<div style="margin-bottom:4px;"><b style="color:var(--grn);">+'+entra[cat]+'</b> regresaron de '+(CATLBL[cat]||cat)+'</div>');
+    }
+    dispNeto+=entra[cat];
+  }
   for(const cat in sale){ dispLines.push('<div style="margin-bottom:4px;"><b style="color:var(--ros);">−'+sale[cat]+'</b> salieron a '+(CATLBL[cat]||cat)+'</div>'); dispNeto-=sale[cat]; }
   if(dispLines.length===0) dispLines.push('<div style="color:var(--tx3);">Sin movimientos hoy.</div>');
   document.getElementById('mov-card-disp').innerHTML =
     '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--amb);margin-bottom:8px;">↕ Movimientos de hoy · Disponible <span style="color:var(--tx3);font-weight:600;">('+(dispNeto>=0?'+':'')+dispNeto+' neto)</span></div>'+
     '<div style="font-size:10.5px;color:var(--tx2);line-height:1.5;">'+dispLines.join('')+'</div>';
 
-  // ── Dañado: llegadas / salidas ──
-  const entraDano = {};
-  for(const m of diff.movimientos){ if(m.to && m.to.cat==='danado' && m.from && m.from.cat!==m.to.cat){ entraDano[m.from.cat]=(entraDano[m.from.cat]||0)+1; } }
-  let danoLines = [], danoNeto=0;
-  for(const cat in entraDano){ danoLines.push('<div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +'+entraDano[cat]+'</b> llegaron desde '+(CATLBL[cat]||cat)+'</div>'); danoNeto+=entraDano[cat]; }
-  for(const m of diff.movimientos){ if(m.from && m.from.cat==='danado' && m.to && m.from.cat!==m.to.cat){ danoLines.push('<div style="margin-bottom:4px;"><b style="color:var(--grn);">▼ −1</b> '+(m.articulo||'').slice(0,44)+' salió a '+(CATLBL[m.to.cat]||m.to.cat)+'</div>'); danoNeto-=1; } }
-  if(danoLines.length===0) danoLines.push('<div style="color:var(--tx3);">Sin cambios hoy.</div>');
+  // ── Dañado: llegadas / salidas, con el artículo específico ──
+  // 30-Oct-2026: (a) misma corrección que Disponible — un equipo dañado sin
+  // historial previo (ej. llega dañado de fábrica) ya no se pierde, se
+  // marca "compra nueva" con su OC si la trae; (b) ahora se lista el
+  // artículo exacto de cada entrada, no solo un conteo por categoría de
+  // origen — responde a "cuáles son los últimos equipos que se agregaron a
+  // daño"; (c) si hoy no hubo cambios, se muestra la bitácora (últimos 3
+  // registrados en HIST_MOV_DANADO) en vez de dejar la tarjeta vacía.
+  const danoEntradas = [], danoSalidas = [];
+  for(const m of diff.movimientos){
+    if(m.to && m.to.cat==='danado' && (!m.from || m.from.cat!==m.to.cat)){
+      const origen = m.from ? (CATLBL[m.from.cat]||m.from.cat) : ('compra nueva'+(m.oc?(' — OC: '+m.oc):''));
+      danoEntradas.push({articulo:m.articulo, origen});
+    }
+    if(m.from && m.from.cat==='danado' && m.to && m.from.cat!==m.to.cat){ danoSalidas.push({articulo:m.articulo, destino:(CATLBL[m.to.cat]||m.to.cat)}); }
+  }
+  const danoNeto = danoEntradas.length - danoSalidas.length;
+  let danoLines = [];
+  for(const e of danoEntradas) danoLines.push('<div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> '+(e.articulo||'').slice(0,44)+' — llegó desde '+e.origen+'</div>');
+  for(const s of danoSalidas) danoLines.push('<div style="margin-bottom:4px;"><b style="color:var(--grn);">▼ −1</b> '+(s.articulo||'').slice(0,44)+' salió a '+s.destino+'</div>');
+  if(danoLines.length===0){
+    danoLines.push('<div style="color:var(--tx3);margin-bottom:6px;">Sin cambios hoy.</div>');
+    const ultDano = HIST_MOV_DANADO.slice(-3).reverse();
+    if(ultDano.length>0){
+      danoLines.push('<div style="font-size:9px;color:var(--tx3);font-weight:700;">Últimos equipos agregados a daño:</div>');
+      for(const u of ultDano) danoLines.push('<div style="margin-top:3px;font-size:10px;color:var(--tx2);"><span style="color:var(--tx3);">'+u.fecha+'</span> — '+(u.articulo||'').slice(0,44)+' (desde '+u.origen+')</div>');
+    }
+  }
   document.getElementById('mov-card-dano').innerHTML =
     '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--ros);margin-bottom:8px;">↕ Movimientos de hoy · Dañado <span style="color:var(--tx3);font-weight:600;">('+(danoNeto>=0?'+':'')+danoNeto+' neto)</span></div>'+
     '<div style="font-size:10.5px;color:var(--tx2);line-height:1.5;">'+danoLines.join('')+'</div>';
 
-  // ── Vendido: folios VTA nuevos hoy ──
-  const nuevosVta = diff.foliosNuevos.filter(x=>x.cat==='vendido');
-  let vtaLines = [];
-  for(const nv of nuevosVta){
-    const cli = nombreCliente(nv.folio);
-    vtaLines.push('<div style="padding:7px 0;border-bottom:1px solid var(--brd);"><div style="display:flex;justify-content:space-between;gap:6px;"><b style="font-size:10.5px;color:#a78bfa;">'+nv.folio+'</b><span style="font-size:8.5px;color:var(--tx3);">hoy</span></div><div style="font-size:9.5px;color:var(--tx);line-height:1.3;margin-top:1px;">'+cli+' — '+nv.n+' equipo'+(nv.n===1?'':'s')+'</div></div>');
+  // ── Vendido: delta por folio (igual que Rentado), no solo folios 100% nuevos ──
+  // 30-Oct-2026: antes solo se reportaban folios con ayer=0 ("folios 100%
+  // nuevos hoy"). Una venta agregada a un folio VTA que YA existía (ej.
+  // equipo dado de alta "por volumen", sin serie propia — VTA-4392 de
+  // Briggs) nunca entraba aquí y se perdía del reporte aunque sí estaba en
+  // el archivo y sí contaba en el KPI "Vendido". Ahora se compara por folio
+  // igual que Rentado: folio nuevo O cambio de cantidad en uno existente,
+  // ambos casos se reportan, con # de OC cuando el archivo lo trae. Si hoy
+  // no hubo folios con cambio, se muestran los últimos 3 de la bitácora
+  // (HIST_MOV_VENDIDO) en vez de dejar la tarjeta vacía.
+  const ocsPorFolioVta = {};
+  for(const m of diff.movimientos){ if(m.to && m.to.cat==='vendido' && m.oc){ const f=m.to.folio; (ocsPorFolioVta[f]=ocsPorFolioVta[f]||new Set()).add(m.oc); } }
+  const foliosVtaSet = new Set([...Object.keys(diff.foliosHoyVta), ...Object.keys(diff.foliosAyerVta)]);
+  let vtaLines = [], vtaCount = 0;
+  for(const folio of foliosVtaSet){
+    if(folio==='SIN-FOLIO') continue;
+    const hoy = diff.foliosHoyVta[folio]||0, ayer = diff.foliosAyerVta[folio]||0;
+    const d = hoy-ayer;
+    if(d===0) continue;
+    vtaCount++;
+    const cli = nombreCliente(folio);
+    const ocs = ocsPorFolioVta[folio] ? Array.from(ocsPorFolioVta[folio]) : [];
+    const ocTxt = ocs.length ? ' · OC: '+ocs.join(', ') : '';
+    const etiqueta = ayer===0 ? 'folio nuevo' : (d>0?('+'+d+' equipo'+(d===1?'':'s')+' agregado'+(d===1?'':'s')):(d+' equipos'));
+    vtaLines.push('<div style="padding:7px 0;border-bottom:1px solid var(--brd);"><div style="display:flex;justify-content:space-between;gap:6px;"><b style="font-size:10.5px;color:#a78bfa;">'+folio+'</b><span style="font-size:8.5px;color:var(--tx3);">hoy · '+etiqueta+'</span></div><div style="font-size:9.5px;color:var(--tx);line-height:1.3;margin-top:1px;">'+cli+' — '+hoy+' equipo'+(hoy===1?'':'s')+' en total'+ocTxt+'</div></div>');
   }
-  if(vtaLines.length===0) vtaLines.push('<div style="font-size:9.5px;color:var(--tx3);">Sin folios VTA nuevos hoy.</div>');
+  if(vtaLines.length===0){
+    vtaLines.push('<div style="font-size:9.5px;color:var(--tx3);margin-bottom:6px;">Sin folios VTA con cambios hoy.</div>');
+    const ultVta = HIST_MOV_VENDIDO.slice(-3).reverse();
+    if(ultVta.length>0){
+      vtaLines.push('<div style="font-size:9px;color:var(--tx3);font-weight:700;">Últimos movimientos registrados:</div>');
+      for(const u of ultVta) vtaLines.push('<div style="font-size:9.5px;color:var(--tx);margin-top:4px;"><span style="color:var(--tx3);">'+u.fecha+'</span> — <b>'+u.folio+'</b> ('+u.cliente+') — '+u.n+' equipo'+(u.n===1?'':'s')+' en total'+(u.oc?(' · OC: '+u.oc):'')+'</div>');
+    }
+  }
   document.getElementById('mov-card-vendido').innerHTML =
-    '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#a78bfa;margin-bottom:8px;">✨ Ventas de hoy · Vendido (VTA) <span style="color:var(--tx3);font-weight:600;">('+nuevosVta.length+' folio'+(nuevosVta.length===1?'':'s')+')</span></div>'+
+    '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#a78bfa;margin-bottom:8px;">✨ Ventas de hoy · Vendido (VTA) <span style="color:var(--tx3);font-weight:600;">('+vtaCount+' folio'+(vtaCount===1?'':'s')+')</span></div>'+
     vtaLines.join('')+
     '<div style="text-align:center;margin-top:8px;"><span style="font-size:9px;color:#a78bfa;cursor:pointer;font-weight:700;" onclick="document.getElementById(\'full-vta\').open=true;document.getElementById(\'full-vta\').scrollIntoView({behavior:\'smooth\'});">Ver folios VTA completos ▾</span></div>';
 }
@@ -8119,6 +8350,7 @@ function prepararPublicacion(diff, snapNuevo){
   // hasta que se guardan, igual que ya pasa con cualquier folio viejo sin
   // nombre capturado.
   renderMovimientos(diff);
+  renderDistribucionClientes(snapNuevo); // 30-Oct-2026: refresca el panel de Distribución por cliente con los datos de hoy
   if(pendientes.length===0){
     panel.style.display='none'; panel.innerHTML='';
     document.getElementById('btn-publicar').style.display='inline-flex';
@@ -8205,6 +8437,8 @@ function exportarHTMLActualizado(){
   out = out.replace(/\nlet ULTIMO_BREAKDOWN\s*=\s*\{[\s\S]*?\};/, '\nlet ULTIMO_BREAKDOWN=' + JSON.stringify(ULTIMO_BREAKDOWN) + ';');
   out = out.replace(/\nlet SNAPSHOT_ANTERIOR\s*=\s*\{[\s\S]*?\};/, '\nlet SNAPSHOT_ANTERIOR = ' + JSON.stringify(PENDIENTE_SNAPSHOT) + ';');
   out = out.replace(/\nlet CLIENTES_POR_FOLIO\s*=\s*\{[\s\S]*?\};/, '\nlet CLIENTES_POR_FOLIO = ' + JSON.stringify(CLIENTES_POR_FOLIO) + ';');
+  out = out.replace(/\nlet HIST_MOV_VENDIDO\s*=\s*\[[\s\S]*?\];/, '\nlet HIST_MOV_VENDIDO = ' + JSON.stringify(HIST_MOV_VENDIDO) + ';');
+  out = out.replace(/\nlet HIST_MOV_DANADO\s*=\s*\[[\s\S]*?\];/, '\nlet HIST_MOV_DANADO = ' + JSON.stringify(HIST_MOV_DANADO) + ';');
 
   const blob = new Blob([out], {type:'text/html'});
   const a = document.createElement('a');

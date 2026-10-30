@@ -108,6 +108,37 @@ movimientos (buscar "30-Oct-2026" en el código para los 5 cambios exactos)
     ninguno, en vez de quedar vacías. exportarHTMLActualizado() las hornea
     igual que SNAPSHOT_ANTERIOR/CLIENTES_POR_FOLIO al publicar.
 
+CORRECCIÓN 30-Oct-2026 (2) — auditoría CP-3089/DLL Leasing: OC solo cuando
+es genuinamente nueva + tarjeta "Inventario Total"
+  - Caso real que destapó el problema: CP-3072 (DLL Leasing) bajó de 220 a
+    217 el mismo día que apareció CP-3089 (Recycle Tech) con 3 equipos
+    "nuevo contrato" y una OC (6952) junto al nombre. Esa OC NO era de una
+    compra nueva — eran los mismos 3 equipos reasignados de CP-3072 a
+    CP-3089 (mismo serie, mismo artículo, solo cambió el folio). Mostrar la
+    OC ahí sugería "compra nueva" cuando era puro movimiento interno.
+  - Las tarjetas de Rentado y Vendido (renderMovimientos) ya NO muestran la
+    OC de cualquier equipo que entra a un folio — solo cuando ese equipo es
+    genuinamente nuevo en el sistema (nunca visto antes en NINGUNA
+    categoría, `m.from` null). Si no aplica, se aclara "(reasignados, sin
+    compra nueva)" en vez de una OC que no significa lo que parece.
+  - Nueva tarjeta "Inventario Total — Movimientos de hoy" (contenedor
+    `mov-card-inv`, función `renderMovimientosInventario()`, llamada desde
+    prepararPublicacion() junto a renderMovimientos()): es la única tarjeta
+    que de verdad justifica la subida/bajada del KPI "Inventario Total".
+    Separa compras genuinamente nuevas (agrupadas por OC, único caso real
+    de "+inventario") de salidas a Vendido/Baja (único caso real de
+    "-inventario", porque esas dos categorías quedan fuera del inventario
+    activo por definición — ver REGLAS DE NEGOCIO arriba). Los movimientos
+    puramente internos entre categorías activas (Disponible↔Rentado↔Dañado,
+    incluida una reasignación folio-a-folio como CP-3072→CP-3089) no
+    aparecen ahí porque no mueven el total — y por eso tampoco deben
+    buscarse en las OC de Rentado/Vendido para "explicar" el total; para
+    eso está esta tarjeta.
+  - HIST_MOV_VENDIDO ya no guarda `cliente` resuelto al momento de
+    registrar el movimiento (se congelaba como "(cliente no registrado)"
+    si el folio se capturaba después) — ahora solo guarda el folio, y
+    nombreCliente(folio) se resuelve cada vez que se muestra.
+
 MOTOR AUTÓNOMO EN EL NAVEGADOR (para que el HTML no dependa de la IA)
   Este archivo ya trae, embebido, todo lo necesario para que cualquier
   persona actualice el Dashboard arrastrando los 5 XLS del día en la zona
@@ -1334,11 +1365,11 @@ body:not(.light) .ct{text-shadow:0 0 10px rgba(129,140,248,.28)}
 
 <!-- ═══ ÚLTIMOS MOVIMIENTOS — rectángulos verticales bajo cada KPI ═══ -->
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:-6px 0 18px;align-items:start;">
-  <div></div>
-  <div id="mov-card-rent" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--grn);margin-bottom:8px;">↕ Movimientos de hoy · Rentado <span style="color:var(--tx3);font-weight:600;">(+18 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;max-height:230px;overflow-y:auto;"><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3088</b> nuevo contrato — <b>SIEMENS HEALTHCARE DIAGNOSTICS</b> — 18 equipos — OC: 3310, 4254, 4294, 4306, 3940, 5999, 4748, 4259, 4270, 4304, 4329</div><div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ CP-3072</b> — <b>DLL LEASING</b> — −3 equipos (de 220 a 217)</div><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3089</b> nuevo contrato — <b>RECYCLE TECH SA DE CV</b> — 3 equipos — OC: 6952</div></div><div style="text-align:center;margin-top:8px;display:flex;gap:10px;justify-content:center;"><span style="font-size:9px;color:var(--grn);cursor:pointer;font-weight:700;" onclick="document.getElementById('full-cp').open=true;document.getElementById('full-cp').scrollIntoView({behavior:'smooth'});">Ver CP completos ▾</span><span style="font-size:9px;color:var(--ros);cursor:pointer;font-weight:700;" onclick="document.getElementById('full-lp').open=true;document.getElementById('full-lp').scrollIntoView({behavior:'smooth'});">Ver LP completos ▾</span></div></div>
+  <div id="mov-card-inv" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--in2);margin-bottom:8px;">↕ Movimientos de hoy · Inventario Total <span style="color:var(--tx3);font-weight:600;">(-4 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;"><div style="margin-bottom:4px;color:var(--tx3);">Sin compras nuevas hoy (0 equipos con OC nueva).</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">−4</b> salieron a Vendido — VTA-4394 (Ana Paola Amaro León)</div><div style="font-size:9px;color:var(--tx3);margin-top:6px;">Los demás movimientos de hoy (Disponible↔Rentado, Disponible↔Dañado, CP-3072→CP-3089) son internos entre categorías activas y no afectan este total.</div></div></div>
+  <div id="mov-card-rent" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--grn);margin-bottom:8px;">↕ Movimientos de hoy · Rentado <span style="color:var(--tx3);font-weight:600;">(+18 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;max-height:230px;overflow-y:auto;"><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3088</b> nuevo contrato — <b>SIEMENS HEALTHCARE DIAGNOSTICS</b> — 18 equipos (reasignados desde Disponible, sin compra nueva)</div><div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ CP-3072</b> — <b>DLL LEASING</b> — −3 equipos (de 220 a 217) — reasignados a CP-3089</div><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3089</b> nuevo contrato — <b>RECYCLE TECH SA DE CV</b> — 3 equipos (reasignados desde CP-3072, sin compra nueva)</div></div><div style="text-align:center;margin-top:8px;display:flex;gap:10px;justify-content:center;"><span style="font-size:9px;color:var(--grn);cursor:pointer;font-weight:700;" onclick="document.getElementById('full-cp').open=true;document.getElementById('full-cp').scrollIntoView({behavior:'smooth'});">Ver CP completos ▾</span><span style="font-size:9px;color:var(--ros);cursor:pointer;font-weight:700;" onclick="document.getElementById('full-lp').open=true;document.getElementById('full-lp').scrollIntoView({behavior:'smooth'});">Ver LP completos ▾</span></div></div>
   <div id="mov-card-disp" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--amb);margin-bottom:8px;">↕ Movimientos de hoy · Disponible <span style="color:var(--tx3);font-weight:600;">(-24 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;"><div style="margin-bottom:4px;"><b style="color:var(--ros);">−18</b> salieron a Rentado</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">−4</b> salieron a Vendido</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">−2</b> salieron a Dañado</div></div></div>
   <div id="mov-card-dano" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--ros);margin-bottom:8px;">↕ Movimientos de hoy · Dañado <span style="color:var(--tx3);font-weight:600;">(+2 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;"><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> MONITOR HP P21 20.5" LED VGA DVI — llegó desde Disponible</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> DELL NB LATITUDE 14 HD 5430 CI5-1235 VPRO 16 — llegó desde Disponible</div></div></div>
-  <div id="mov-card-vendido" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#a78bfa;margin-bottom:8px;">✨ Ventas de hoy · Vendido (VTA) <span style="color:var(--tx3);font-weight:600;">(1 folio)</span></div><div style="padding:7px 0;border-bottom:1px solid var(--brd);"><div style="display:flex;justify-content:space-between;gap:6px;"><b style="font-size:10.5px;color:#a78bfa;">VTA-4394</b><span style="font-size:8.5px;color:var(--tx3);">hoy · folio nuevo</span></div><div style="font-size:9.5px;color:var(--tx);line-height:1.3;margin-top:1px;">ANA PAOLA AMARO LEON — 4 equipos en total · OC: 3799, 4462, 3109, 3280</div></div><div style="text-align:center;margin-top:8px;"><span style="font-size:9px;color:#a78bfa;cursor:pointer;font-weight:700;" onclick="document.getElementById('full-vta').open=true;document.getElementById('full-vta').scrollIntoView({behavior:'smooth'});">Ver folios VTA completos ▾</span></div></div>
+  <div id="mov-card-vendido" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#a78bfa;margin-bottom:8px;">✨ Ventas de hoy · Vendido (VTA) <span style="color:var(--tx3);font-weight:600;">(1 folio)</span></div><div style="padding:7px 0;border-bottom:1px solid var(--brd);"><div style="display:flex;justify-content:space-between;gap:6px;"><b style="font-size:10.5px;color:#a78bfa;">VTA-4394</b><span style="font-size:8.5px;color:var(--tx3);">hoy · folio nuevo</span></div><div style="font-size:9.5px;color:var(--tx);line-height:1.3;margin-top:1px;">ANA PAOLA AMARO LEON — 4 equipos en total (reasignados desde Disponible, sin compra nueva)</div></div><div style="text-align:center;margin-top:8px;"><span style="font-size:9px;color:#a78bfa;cursor:pointer;font-weight:700;" onclick="document.getElementById('full-vta').open=true;document.getElementById('full-vta').scrollIntoView({behavior:'smooth'});">Ver folios VTA completos ▾</span></div></div>
 </div>
 
 <!-- ═══ VENTAS (VTA) — RESUMEN, ancho completo ═══ -->
@@ -6520,7 +6551,7 @@ let CONFIRMAR_MASIVO = false;
 // los últimos movimientos reales (folio/artículo + fecha) para que el panel
 // pueda mostrar "últimos movimientos" aunque hoy no haya nada nuevo. Se
 // limita a los últimos 50 registros por sección para no inflar el archivo.
-let HIST_MOV_VENDIDO = [{"fecha":"2026-10-30","folio":"VTA-4394","cliente":"VTA-4394 (cliente no registrado)","n":4,"delta":4,"oc":"3799, 4462, 3109, 3280"}];
+let HIST_MOV_VENDIDO = [{"fecha":"2026-10-30","folio":"VTA-4394","n":4,"delta":4,"oc":""}];
 let HIST_MOV_DANADO = [{"fecha":"2026-10-30","articulo":"MONITOR HP P21 20.5\" LED VGA DVI","origen":"Disponible"},{"fecha":"2026-10-30","articulo":"DELL NB LATITUDE 14 HD 5430 CI5-1235 VPRO 16GB 256GB SSD W10PRO 3WTY","origen":"Disponible"}];
 
 function mostrarMemoriaArchivo(){
@@ -8167,14 +8198,22 @@ function registrarBitacoraMovimientos(diff){
   if(!diff || diff._bitacoraRegistrada) return;
   diff._bitacoraRegistrada = true;
   const fechaHoy = HIST.fechas[HIST.fechas.length-1] || todayStr();
+  // 30-Oct-2026: la OC solo cuenta cuando el equipo es genuinamente nuevo
+  // (m.from null) — mismo criterio que renderMovimientos(). Y ya NO se
+  // guarda `cliente` resuelto aquí: el flujo normal es registrar el
+  // movimiento primero y capturar el nombre del cliente después (formulario
+  // de "folios pendientes"), así que congelar el nombre en este momento
+  // podía dejarlo para siempre como "(cliente no registrado)" aunque ya se
+  // hubiera capturado. Ahora solo se guarda el folio; nombreCliente(folio)
+  // se resuelve cada vez que se muestra, siempre con el dato más reciente.
   const ocsPorFolioVta = {};
-  for(const m of diff.movimientos){ if(m.to && m.to.cat==='vendido' && m.oc){ const f=m.to.folio; (ocsPorFolioVta[f]=ocsPorFolioVta[f]||new Set()).add(m.oc); } }
+  for(const m of diff.movimientos){ if(m.to && m.to.cat==='vendido' && m.oc && !m.from){ const f=m.to.folio; (ocsPorFolioVta[f]=ocsPorFolioVta[f]||new Set()).add(m.oc); } }
   const foliosVtaSet = new Set([...Object.keys(diff.foliosHoyVta||{}), ...Object.keys(diff.foliosAyerVta||{})]);
   for(const folio of foliosVtaSet){
     if(folio==='SIN-FOLIO') continue;
     const hoy=(diff.foliosHoyVta||{})[folio]||0, ayer=(diff.foliosAyerVta||{})[folio]||0;
     if(hoy===ayer) continue;
-    HIST_MOV_VENDIDO.push({fecha:fechaHoy, folio, cliente:nombreCliente(folio), n:hoy, delta:hoy-ayer,
+    HIST_MOV_VENDIDO.push({fecha:fechaHoy, folio, n:hoy, delta:hoy-ayer,
       oc: ocsPorFolioVta[folio] ? Array.from(ocsPorFolioVta[folio]).join(', ') : ''});
   }
   if(HIST_MOV_VENDIDO.length>50) HIST_MOV_VENDIDO.splice(0, HIST_MOV_VENDIDO.length-50);
@@ -8187,10 +8226,70 @@ function registrarBitacoraMovimientos(diff){
   if(HIST_MOV_DANADO.length>50) HIST_MOV_DANADO.splice(0, HIST_MOV_DANADO.length-50);
 }
 
+// ══ INVENTARIO TOTAL — justificación del movimiento neto (30-Oct-2026) ══
+// Antes, la única forma de "justificar" una subida/bajada de Inventario
+// Total era mirar las OC sueltas en las tarjetas de Rentado/Vendido — y esas
+// OC casi siempre son de compras VIEJAS de equipo ya existente (reasignado),
+// no explican nada sobre el total. Esta tarjeta sí explica el total: separa
+// compras genuinamente nuevas (único caso real de "+inventario") de salidas
+// a Vendido/Baja (únicos casos reales de "-inventario") — los movimientos
+// puramente internos entre categorías activas (Disponible↔Rentado↔Dañado)
+// no aparecen aquí porque no mueven el total.
+const CATS_ACTIVAS = new Set(['disponible','rentado','danado']);
+function renderMovimientosInventario(diff){
+  const el = document.getElementById('mov-card-inv'); if(!el) return;
+  const comprasPorOC = {}; // oc -> cantidad de equipos genuinamente nuevos
+  let sinOC = 0;
+  let salidasVendido = 0, salidasBaja = 0, entradasDesdeVendido = 0, entradasDesdeBaja = 0;
+  let desaparecidos = 0; // serie activa ayer que hoy no aparece en NINGUNA de las 5 categorías — anomalía de datos
+  for(const m of diff.movimientos){
+    const toActiva = m.to && CATS_ACTIVAS.has(m.to.cat);
+    const fromActiva = m.from && CATS_ACTIVAS.has(m.from.cat);
+    if(toActiva && !m.from){
+      const oc = m.oc || '';
+      if(oc){ comprasPorOC[oc]=(comprasPorOC[oc]||0)+1; } else { sinOC++; }
+    } else if(toActiva && m.from && !fromActiva){
+      if(m.from.cat==='vendido') entradasDesdeVendido++;
+      else if(m.from.cat==='baja') entradasDesdeBaja++;
+    } else if(fromActiva && (!m.to || !toActiva)){
+      if(m.to && m.to.cat==='vendido') salidasVendido++;
+      else if(m.to && m.to.cat==='baja') salidasBaja++;
+      else if(!m.to) desaparecidos++;
+    }
+  }
+  const totalCompras = Object.values(comprasPorOC).reduce((a,b)=>a+b,0) + sinOC;
+  const neto = totalCompras + entradasDesdeVendido + entradasDesdeBaja - salidasVendido - salidasBaja - desaparecidos;
+  let lines = [];
+  if(totalCompras>0){
+    const ocTxts = Object.entries(comprasPorOC).map(([oc,n])=>'OC '+oc+' ('+n+')');
+    if(sinOC>0) ocTxts.push(sinOC+' sin # de OC en el archivo');
+    lines.push('<div style="margin-bottom:4px;"><b style="color:var(--grn);">+'+totalCompras+'</b> compras nuevas — '+ocTxts.join(', ')+'</div>');
+  } else {
+    lines.push('<div style="margin-bottom:4px;color:var(--tx3);">Sin compras nuevas hoy (0 equipos con OC nueva).</div>');
+  }
+  if(salidasVendido>0) lines.push('<div style="margin-bottom:4px;"><b style="color:var(--ros);">−'+salidasVendido+'</b> salieron a Vendido</div>');
+  if(salidasBaja>0) lines.push('<div style="margin-bottom:4px;"><b style="color:var(--ros);">−'+salidasBaja+'</b> salieron a Baja</div>');
+  if(entradasDesdeVendido>0) lines.push('<div style="margin-bottom:4px;"><b style="color:var(--grn);">+'+entradasDesdeVendido+'</b> regresaron de Vendido (corrección)</div>');
+  if(entradasDesdeBaja>0) lines.push('<div style="margin-bottom:4px;"><b style="color:var(--grn);">+'+entradasDesdeBaja+'</b> regresaron de Baja (corrección)</div>');
+  if(desaparecidos>0) lines.push('<div style="margin-bottom:4px;"><b style="color:var(--ros);">⚠ '+desaparecidos+'</b> salieron de Rentado/Disponible/Dañado sin aparecer en ninguna de las 5 categorías hoy — revisar, posible error de datos</div>');
+  lines.push('<div style="font-size:9px;color:var(--tx3);margin-top:6px;">Los demás movimientos de hoy son internos entre categorías activas (Disponible↔Rentado↔Dañado) y no afectan este total.</div>');
+  el.innerHTML = '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--in2);margin-bottom:8px;">↕ Movimientos de hoy · Inventario Total <span style="color:var(--tx3);font-weight:600;">('+(neto>=0?'+':'')+neto+' neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;">'+lines.join('')+'</div>';
+}
+
 function renderMovimientos(diff){
   // ── Rentado: delta por folio (LP/CP) ──
+  // 30-Oct-2026 (auditoría CP-3089/DLL Leasing): antes se mostraba el # de
+  // OC de CUALQUIER equipo que entrara a un folio, sin importar si venía de
+  // Disponible (stock ya existente, reasignado) o si era una compra nueva.
+  // Eso confundía: una OC junto a un "nuevo contrato" parecía indicar que
+  // esos equipos se acababan de comprar, cuando casi siempre son stock
+  // reasignado (la OC es la de su compra ORIGINAL, no tiene relación con el
+  // movimiento de hoy). Ahora solo se muestra la OC cuando el equipo es
+  // genuinamente nuevo en el sistema (sin registro previo en NINGUNA
+  // categoría, m.from null) — la única OC que de verdad "justifica" el
+  // movimiento. Cuando no aplica, se aclara que son equipos reasignados.
   const ocsPorFolioRent = {};
-  for(const m of diff.movimientos){ if(m.to && m.to.cat==='rentado' && m.oc){ const f=m.to.folio; (ocsPorFolioRent[f]=ocsPorFolioRent[f]||new Set()).add(m.oc); } }
+  for(const m of diff.movimientos){ if(m.to && m.to.cat==='rentado' && m.oc && !m.from){ const f=m.to.folio; (ocsPorFolioRent[f]=ocsPorFolioRent[f]||new Set()).add(m.oc); } }
   const foliosSet = new Set([...Object.keys(diff.foliosHoyRent), ...Object.keys(diff.foliosAyerRent)]);
   let rentLines = [], rentNeto = 0;
   for(const folio of foliosSet){
@@ -8201,7 +8300,7 @@ function renderMovimientos(diff){
     rentNeto += delta;
     const cli = nombreCliente(folio);
     const ocs = ocsPorFolioRent[folio] ? Array.from(ocsPorFolioRent[folio]) : [];
-    const ocTxt = ocs.length ? ' — OC: '+ocs.join(', ') : '';
+    const ocTxt = ocs.length ? ' — OC nueva: '+ocs.join(', ') : (delta>0 ? ' (reasignados, sin compra nueva)' : '');
     if(ayer===0){
       rentLines.push('<div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ '+folio+'</b> nuevo contrato — <b>'+cli+'</b> — '+hoy+' equipo'+(hoy===1?'':'s')+ocTxt+'</div>');
     } else if(hoy===0){
@@ -8295,8 +8394,12 @@ function renderMovimientos(diff){
   // ambos casos se reportan, con # de OC cuando el archivo lo trae. Si hoy
   // no hubo folios con cambio, se muestran los últimos 3 de la bitácora
   // (HIST_MOV_VENDIDO) en vez de dejar la tarjeta vacía.
+  // 30-Oct-2026: misma corrección que Rentado — la OC solo se muestra cuando
+  // el equipo es genuinamente nuevo (sin registro previo, m.from null). La
+  // mayoría de las ventas salen de Disponible (stock ya existente); su OC es
+  // la de la compra original y no tiene nada que ver con la venta de hoy.
   const ocsPorFolioVta = {};
-  for(const m of diff.movimientos){ if(m.to && m.to.cat==='vendido' && m.oc){ const f=m.to.folio; (ocsPorFolioVta[f]=ocsPorFolioVta[f]||new Set()).add(m.oc); } }
+  for(const m of diff.movimientos){ if(m.to && m.to.cat==='vendido' && m.oc && !m.from){ const f=m.to.folio; (ocsPorFolioVta[f]=ocsPorFolioVta[f]||new Set()).add(m.oc); } }
   const foliosVtaSet = new Set([...Object.keys(diff.foliosHoyVta), ...Object.keys(diff.foliosAyerVta)]);
   let vtaLines = [], vtaCount = 0;
   for(const folio of foliosVtaSet){
@@ -8307,7 +8410,7 @@ function renderMovimientos(diff){
     vtaCount++;
     const cli = nombreCliente(folio);
     const ocs = ocsPorFolioVta[folio] ? Array.from(ocsPorFolioVta[folio]) : [];
-    const ocTxt = ocs.length ? ' · OC: '+ocs.join(', ') : '';
+    const ocTxt = ocs.length ? ' · OC nueva: '+ocs.join(', ') : ' (reasignados desde Disponible, sin compra nueva)';
     const etiqueta = ayer===0 ? 'folio nuevo' : (d>0?('+'+d+' equipo'+(d===1?'':'s')+' agregado'+(d===1?'':'s')):(d+' equipos'));
     vtaLines.push('<div style="padding:7px 0;border-bottom:1px solid var(--brd);"><div style="display:flex;justify-content:space-between;gap:6px;"><b style="font-size:10.5px;color:#a78bfa;">'+folio+'</b><span style="font-size:8.5px;color:var(--tx3);">hoy · '+etiqueta+'</span></div><div style="font-size:9.5px;color:var(--tx);line-height:1.3;margin-top:1px;">'+cli+' — '+hoy+' equipo'+(hoy===1?'':'s')+' en total'+ocTxt+'</div></div>');
   }
@@ -8316,7 +8419,13 @@ function renderMovimientos(diff){
     const ultVta = HIST_MOV_VENDIDO.slice(-3).reverse();
     if(ultVta.length>0){
       vtaLines.push('<div style="font-size:9px;color:var(--tx3);font-weight:700;">Últimos movimientos registrados:</div>');
-      for(const u of ultVta) vtaLines.push('<div style="font-size:9.5px;color:var(--tx);margin-top:4px;"><span style="color:var(--tx3);">'+u.fecha+'</span> — <b>'+u.folio+'</b> ('+u.cliente+') — '+u.n+' equipo'+(u.n===1?'':'s')+' en total'+(u.oc?(' · OC: '+u.oc):'')+'</div>');
+      // 30-Oct-2026: el nombre de cliente se resuelve AQUÍ, en el momento de
+      // mostrarlo, no al guardar la bitácora — si el folio se capturó
+      // DESPUÉS de registrarse en HIST_MOV_VENDIDO (flujo normal: primero se
+      // registra el movimiento, luego se llena el formulario de cliente
+      // pendiente), el nombre ya se ve correcto en vez de quedar congelado
+      // como "(cliente no registrado)" para siempre.
+      for(const u of ultVta) vtaLines.push('<div style="font-size:9.5px;color:var(--tx);margin-top:4px;"><span style="color:var(--tx3);">'+u.fecha+'</span> — <b>'+u.folio+'</b> ('+nombreCliente(u.folio)+') — '+u.n+' equipo'+(u.n===1?'':'s')+' en total'+(u.oc?(' · OC nueva: '+u.oc):'')+'</div>');
     }
   }
   document.getElementById('mov-card-vendido').innerHTML =
@@ -8373,6 +8482,7 @@ function prepararPublicacion(diff, snapNuevo){
   // hasta que se guardan, igual que ya pasa con cualquier folio viejo sin
   // nombre capturado.
   renderMovimientos(diff);
+  renderMovimientosInventario(diff); // 30-Oct-2026: justificación del neto de Inventario Total (compras nuevas vs. Vendido/Baja)
   renderDistribucionClientes(snapNuevo); // 30-Oct-2026: refresca el panel de Distribución por cliente con los datos de hoy
   if(pendientes.length===0){
     panel.style.display='none'; panel.innerHTML='';

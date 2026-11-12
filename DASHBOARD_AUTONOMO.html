@@ -473,6 +473,7 @@ body:not(.light) .ct{text-shadow:0 0 10px rgba(129,140,248,.28)}
   </div>
 </div>
 <div id="pend-clientes-panel" class="card" style="display: none; border: 1.5px solid var(--amb);"></div>
+<div id="pend-aclaraciones-panel" class="card" style="display: none; border: 1.5px solid var(--amb);"></div>
 
 <!-- STATUS BAR (oculto hasta tener datos) -->
 <div id="status-bar" style="display: flex;">
@@ -1409,7 +1410,7 @@ body:not(.light) .ct{text-shadow:0 0 10px rgba(129,140,248,.28)}
 
 <!-- ═══ ÚLTIMOS MOVIMIENTOS — rectángulos verticales bajo cada KPI ═══ -->
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:-6px 0 18px;align-items:start;">
-  <div id="mov-card-inv" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--in2);margin-bottom:8px;">↕ Movimientos de hoy · Inventario Total <span style="color:var(--tx3);font-weight:600;">(-21 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;"><div style="margin-bottom:4px;color:var(--tx3);">Sin compras nuevas hoy (0 equipos con OC nueva).</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">−22</b> salieron a Vendido</div><div style="margin-bottom:4px;"><b style="color:var(--grn);">+1</b> regresaron de Vendido (corrección)</div><div style="font-size:9px;color:var(--tx3);margin-top:6px;">Los demás movimientos de hoy son internos entre categorías activas (Disponible↔Rentado↔Dañado) y no afectan este total.</div></div></div>
+  <div id="mov-card-inv" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--in2);margin-bottom:8px;">↕ Movimientos de hoy · Inventario Total <span style="color:var(--tx3);font-weight:600;">(-21 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;"><div style="margin-bottom:4px;color:var(--tx3);">Sin compras nuevas hoy (0 equipos con OC nueva).</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">−22</b> salieron a Vendido</div><div style="margin-bottom:2px;"><b style="color:var(--grn);">+1</b> regresó de Vendido <span style="color:var(--tx3);font-weight:600;">(causa sin verificar: devolución, garantía o reasignación de serie — el detalle serie/artículo/folio para este día no quedó guardado; a partir del próximo reproceso del XLS cada movimiento como este mostrará su detalle completo)</span></div><div style="font-size:9px;color:var(--tx3);margin-top:6px;">Los demás movimientos de hoy son internos entre categorías activas (Disponible↔Rentado↔Dañado) y no afectan este total.</div></div></div>
   <div id="mov-card-rent" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--grn);margin-bottom:8px;">↕ Movimientos de hoy · Rentado <span style="color:var(--tx3);font-weight:600;">(+38 neto)</span></div><div class="tabs" style="margin:0 0 8px;gap:4px;"><button class="tab ac" style="padding:2px 9px;font-size:9px;" onclick="toggleMovView('cliente',this)">👥 Por Cliente</button><button class="tab" style="padding:2px 9px;font-size:9px;" onclick="toggleMovView('contrato',this)">📄 Por Contrato</button></div><div id="mov-rent-cliente" style="font-size:10.5px;color:var(--tx2);line-height:1.5;max-height:230px;overflow-y:auto;"><div style="margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--brd);"><div><b style="color:var(--grn);">🔺 +41</b> <b>PUBLICO EN GENERAL (MERCADOLIBRE)</b></div><div style="font-size:9px;color:var(--tx3);margin-top:2px;">CP-3097 (nuevo contrato, +46) · CP-2991 (-5)</div><div style="font-size:9.5px;color:var(--tx2);margin-top:3px;">📦 -5 TABLET HANDHELD · 🎒 +23 ACCESORIOS · 💻 +23 PORTATILES</div></div><div style="margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--brd);"><div><b style="color:var(--ros);">🔻 -4</b> <b>SCITUM</b></div><div style="font-size:9px;color:var(--tx3);margin-top:2px;">CP-3051 (nuevo contrato, +16) · CP-3050 (retiro completo, −20)</div><div style="font-size:9.5px;color:var(--tx2);margin-top:3px;">🎒 -2 ACCESORIOS · 💻 -2 PORTATILES</div></div><div style="margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--brd);"><div><b style="color:var(--grn);">🔺 +3</b> <b>LUIS ANGEL RODRIGUEZ BARRAZA</b></div><div style="font-size:9px;color:var(--tx3);margin-top:2px;">CP-3091 (nuevo contrato, +3)</div><div style="font-size:9.5px;color:var(--tx2);margin-top:3px;">💻 +1 PORTATILES · 🎒 +1 ACCESORIOS</div></div><div style="margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--brd);"><div><b style="color:var(--ros);">🔻 -1</b> <b>CORPORATIVO CIPSATRADE S.AP.I DE C.V.</b></div><div style="font-size:9px;color:var(--tx3);margin-top:2px;">LP-806 (retiro completo, −1)</div></div><div style="margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--brd);"><div><b style="color:var(--ros);">🔻 -1</b> <b>CENTRO EDUCATIVO SAN MATEO</b></div><div style="font-size:9px;color:var(--tx3);margin-top:2px;">LP-1024 (retiro completo, −1)</div><div style="font-size:9.5px;color:var(--tx2);margin-top:3px;">🖨️ -1 IMPRESORAS</div></div><div style="margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid var(--brd);"><div><b style="color:var(--tx3);">➖ 0</b> <b>NUEVA WAL MART DE MEXICO</b></div><div style="font-size:9px;color:var(--tx3);margin-top:2px;">CP-3081 (-3) · CP-3080 (-5) · CP-3082 (-6) · CP-3077 (-1) · CP-3083 (+7) · CP-3084 (+8)</div><div style="font-size:9.5px;color:var(--tx2);margin-top:3px;">🎒 -1 ACCESORIOS</div></div></div><div id="mov-rent-contrato" style="font-size:10.5px;color:var(--tx2);line-height:1.5;max-height:230px;overflow-y:auto;display:none;"><div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ CP-3081</b> — <b>NUEVA WAL MART DE MEXICO</b> — −3 equipos (de 50 a 47)</div><div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ CP-3080</b> — <b>NUEVA WAL MART DE MEXICO</b> — −5 equipos (de 50 a 45)</div><div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ CP-3082</b> — <b>NUEVA WAL MART DE MEXICO</b> — −6 equipos (de 50 a 44)</div><div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ CP-3077</b> — <b>NUEVA WAL MART DE MEXICO</b> — −1 equipo (de 28 a 27)</div><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3091</b> nuevo contrato — <b>LUIS ANGEL RODRIGUEZ BARRAZA</b> — 3 equipos (reasignados, sin compra nueva)</div><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3097</b> nuevo contrato — <b>PUBLICO EN GENERAL (MERCADOLIBRE)</b> — 46 equipos (reasignados, sin compra nueva)</div><div style="margin-bottom:6px;"><b style="color:var(--grn);">▲ CP-3083</b> — <b>NUEVA WAL MART DE MEXICO</b> — +7 equipos (de 50 a 57) (reasignados, sin compra nueva)</div><div style="margin-bottom:6px;"><b style="color:var(--grn);">▲ CP-3084</b> — <b>NUEVA WAL MART DE MEXICO</b> — +8 equipos (de 50 a 58) (reasignados, sin compra nueva)</div><div style="margin-bottom:6px;"><b style="color:var(--grn);">✨ CP-3051</b> nuevo contrato — <b>SCITUM</b> — 16 equipos (reasignados, sin compra nueva)</div><div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ CP-2991</b> — <b>PUBLICO EN GENERAL (MERCADOLIBRE)</b> — −5 equipos (de 20 a 15)</div><div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ LP-806</b> — <b>CORPORATIVO CIPSATRADE S.AP.I DE C.V.</b> — retiro completo, −1 equipo</div><div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ CP-3050</b> — <b>SCITUM</b> — retiro completo, −20 equipos</div><div style="margin-bottom:6px;"><b style="color:var(--ros);">▼ LP-1024</b> — <b>CENTRO EDUCATIVO SAN MATEO</b> — retiro completo, −1 equipo</div></div><div style="text-align:center;margin-top:8px;display:flex;gap:10px;justify-content:center;"><span style="font-size:9px;color:var(--grn);cursor:pointer;font-weight:700;" onclick="document.getElementById('full-cp').open=true;document.getElementById('full-cp').scrollIntoView({behavior:'smooth'});">Ver CP completos ▾</span><span style="font-size:9px;color:var(--ros);cursor:pointer;font-weight:700;" onclick="document.getElementById('full-lp').open=true;document.getElementById('full-lp').scrollIntoView({behavior:'smooth'});">Ver LP completos ▾</span></div></div>
   <div id="mov-card-disp" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--amb);margin-bottom:8px;">↕ Movimientos de hoy · Disponible <span style="color:var(--tx3);font-weight:600;">(-68 neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;"><div style="margin-bottom:4px;"><b style="color:var(--grn);">+34</b> regresaron de Rentado</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">−17</b> salieron a Vendido</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">−78</b> salieron a Rentado</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">−7</b> salieron a Dañado</div></div></div>
   <div id="mov-card-dano" style="background:var(--sf);border:1px solid var(--brd);border-radius:12px;padding:12px 14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--ros);margin-bottom:8px;">↕ Movimientos de hoy · Dañado <span style="color:var(--tx3);font-weight:600;">(+9 neto)</span></div><div class="tabs" style="margin:0 0 8px;gap:4px;"><button class="tab ac" style="padding:2px 9px;font-size:9px;" onclick="toggleDanoView('resumen',this)">🧮 Resumen</button><button class="tab" style="padding:2px 9px;font-size:9px;" onclick="toggleDanoView('lista',this)">📋 Últimos movimientos</button></div><div id="mov-dano-resumen" style="font-size:10.5px;color:var(--tx2);line-height:1.5;"><div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--brd);"><span>🖨️ IMPRESORAS</span><span>🔺 +1 <span style="color:var(--tx3);font-size:9px;">(▲1 ▼0)</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--brd);"><span>💻 PORTATILES</span><span>🔺 +5 <span style="color:var(--tx3);font-size:9px;">(▲5 ▼0)</span></span></div><div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--brd);"><span>📦 TABLET HANDHELD</span><span>🔺 +3 <span style="color:var(--tx3);font-size:9px;">(▲3 ▼0)</span></span></div><details style="margin-top:8px;"><summary style="cursor:pointer;font-size:9px;font-weight:700;color:var(--ros);">Ver historial por fecha y tipo ▾</summary><div style="margin-top:6px;max-height:160px;overflow-y:auto;"><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-10</span> — 💻 PORTATILES</span><span style="color:var(--tx3);">desde Vendido</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-10</span> — 📦 TABLET HANDHELD</span><span style="color:var(--tx3);">desde Disponible</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-10</span> — 📦 TABLET HANDHELD</span><span style="color:var(--tx3);">desde Disponible</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-10</span> — 📦 TABLET HANDHELD</span><span style="color:var(--tx3);">desde Disponible</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-10</span> — 💻 PORTATILES</span><span style="color:var(--tx3);">desde Disponible</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-10</span> — 💻 PORTATILES</span><span style="color:var(--tx3);">desde Disponible</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-10</span> — 💻 PORTATILES</span><span style="color:var(--tx3);">desde Disponible</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-10</span> — 💻 PORTATILES</span><span style="color:var(--tx3);">desde Disponible</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-10</span> — 🖨️ IMPRESORAS</span><span style="color:var(--tx3);">desde Rentado</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-06</span> — 📦 SIN CATEGORÍA</span><span style="color:var(--tx3);">desde Rentado</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-03</span> — 📦 SIN CATEGORÍA</span><span style="color:var(--tx3);">desde Disponible</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-11-03</span> — 📦 SIN CATEGORÍA</span><span style="color:var(--tx3);">desde Disponible</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-10-30</span> — 📦 SIN CATEGORÍA</span><span style="color:var(--tx3);">desde Disponible</span></div><div style="display:flex;justify-content:space-between;padding:2px 0;font-size:9.5px;"><span><span style="color:var(--tx3);">2026-10-30</span> — 📦 SIN CATEGORÍA</span><span style="color:var(--tx3);">desde Disponible</span></div></div></details></div><div id="mov-dano-lista" style="font-size:10.5px;color:var(--tx2);line-height:1.5;display:none;"><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> CREALITY K1 MAX IMPRESORA 3D, 600 MM/S, DOBL — llegó desde Rentado</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> DELL LATITUDE 7490 -INTEL CORE I5 8VA. - 16G — llegó desde Disponible</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> DELL NB LATITUDE 14 HD 5430 CI5-1235 VPRO 16 — llegó desde Disponible</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> DELL NB LATITUDE 14 HD 5430 CI5-1235 VPRO 16 — llegó desde Disponible</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> DELL NB LATITUDE 14 HD 5430 CI5-1235 VPRO 16 — llegó desde Disponible</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> IPAD DE 10,2 PULGADAS 9A GENERACIÓN — llegó desde Disponible</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> IPAD DE 10,2 PULGADAS 9A GENERACIÓN — llegó desde Disponible</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> IPAD DE 10,2 PULGADAS 9A GENERACIÓN — llegó desde Disponible</div><div style="margin-bottom:4px;"><b style="color:var(--ros);">▲ +1</b> HP ELITEBOOK 840 G6 CI5-8265U SYST 14 16G 25 — llegó desde Vendido</div></div></div>
@@ -6521,6 +6522,7 @@ let SNAPSHOT_ANTERIOR = {"fecha":"2026-11-10","rentado":{"76446501":{"contrato":
 // primera vez que aparece un folio nuevo, y desde entonces queda aquí
 // para siempre. No se necesita para folios "SIN-FOLIO".
 let CLIENTES_POR_FOLIO = {"CP-3028":"Siemens Healthcare Diagnostics","CP-3027":"Creatividad y Espectáculos S.A. de C.V.","CP-3030":"Creatividad y Espectáculos S.A. de C.V.","CP-3032":"Operación y Comercialización Ideas Creativas S.A. de C.V.","LP-450":"Briggs Equipment S.A. de C.V.","CP-3038":"Despegar.com","LP-471":"Forklift Operations de México S.A. de C.V.","VTA-4322":"JULIO DE JESUS PEREZ OMANA","VTA-4326":"ANA PAOLA AMARO LEON","CP-3039":"OPERADORA DE CENTROS DE ESPECTACULOS","LP-833":"INDUSTRIAS VOLFRE 1998-S","LP-970":"1995-S BRIGGS EQUIPMENT","LP-728":"PERFOPARTS","LP-575":"HANDLING HEALTHCARE","LP-736":"HANDLING HEALTHCARE","LP-763":"HANDLING HEALTHCARE","VTA-4330":"HANDLING HEALTHCARE","VTA-4334":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4332":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4275":"PUBLICO EN GENERAL (PCRENT STORE)","CP-2786":"MAKE PRO SA DE CV","CP-2653":"NUEVA WAL MART DE MEXICO S. DE R.L. DE C.V.","CP-2861":"NUEVA WAL MART DE MEXICO S. DE R.L. DE C.V.","CP-3016":"EMERSON PROCESS MANAGEMENT S.A. DE C.V.","VTA-4327":"CORPORACION DE IMPORTACIONES Y EXPORTACIONES MEXICANAS S.A DE C.V","VTA-4335":"MINISTERIO VIVE","VTA-4336":"ANA PAOLA AMARO LEON","LP-713":"HANDLING HEALTHCARE S.A. DE C.V","LP-521":"HANDLING HEALTHCARE S.A. DE C.V","CP-3044":"FATIMA JIMÉNEZ PRADO","CP-3043":"NUEVA WAL MART DE MEXICO","CP-3041":"NUEVA WAL MART DE MEXICO","CP-3045":"MTING SA DE CV","LP-902":"PERFOPARTS","LP-903":"OPM IMPORT SA DE CV","CP-3040":"NUEVA WAL MART DE MEXICO","CP-3042":"NUEVA WAL MART DE MEXICO","CP-3036":"OPERADORA DE CENTROS DE ESPECTACULOS","CP-3013":"OVERALL STRATEGY","VTA-4135":"BRIGGS EQUIPMENT","VTA-4205":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4338":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-2687":"BRIGGS EQUIPMENT S.A. DE C.V.","VTA-4337":"HECTOR ROMEO ESPAÑA VARGAS","VTA-4256":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4333":"SIEMENS","CP-961":"NUEVA WAL MART DE MEXICO","LP-816":"BRIGGS EQUIPMENT","LP-1022":"OPM IMPORT SA DE CV","CP-2998":"CREATIVIDAD E INTEGRACION EN SERVICIOS","CP-2999":"CREATIVIDAD E INTEGRACION EN SERVICIOS MEDICOS","VTA-4339":"JOSE GERARDO PEÑA RODRIGUEZ","VTA-4341":"COS INFORMATICA MEXICO","LP-919":"BRIGGS EQUIPMENT","LP-692":"EDIFICACION Y PLANEACION CALZADA","LP-764":"INDUSTRIAS VOLFRE SA DE CV","CP-2984":"CONSORCIO EJECUTIVO CONTABLE Y FISCAL CECOF","LP-1023":"BRIGGS EQUIPMENT","CP-2058":"RECYCLE TECH","CP-3047":"ROADTEK SA DE CV","VTA-4305":"ANA PAOLA AMARO LEON","VTA-3831":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-4251":"SIEMENS HEALTHCARE DIAGNOSTICS","CP-2873":"CREATIVIDAD Y ESPECTACULOS SA DE CV","CP-3048":"MTING SA DE CV","CP-2982":"EMERSON PROCESS MANAGEMENT S.A. DE C.V.","CP-2920":"NUEVA WAL MART DE MEXICO","CP-3011":"CREATIVIDAD E INTEGRACION EN SERVICIOS MEDICOS","VTA-4345":"LYMSA MAQUINADOS","VTA-4346":"DAVID ABIEL GARCÍA LANDAVERDE","VTA-4301":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4344":"ANA PAOLA AMARO LEON","VTA-4347":"ANA PAOLA AMARO LEON","CP-3049":"MTING SA DE CV","VTA-4348":"PUBLICO EN GENERAL (MERCADOLIBRE)","CP-3053":"PROFUTURO AFORE SA DE CV","LP-1025":"OPM IMPORT SA DE CV","LP-1024":"CENTRO EDUCATIVO SAN MATEO","CP-3046":"MAKE PRO SA DE CV","LP-330":"BRIGGS EQUIPMENT S.A. DE C.V.","CP-2959":"CREATIVIDAD E INTEGRACION EN SERVICIOS MEDICOS S.A. DE C.V.","LP-718":"CONSULTORIA Y OPERACION DE NEGOCIOS GLOBALES EM SA DE CV","VTA-4041":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-3532":"BRIGGS EQUIPMENT S.A. DE C.V.","VTA-3494":"OPM IMPORT SA DE CV","VTA-4352":"CONSULTORIA Y OPERACION DE NEGOCIOS GLOBALES EM SA DE CV","VTA-4288":"NUEVA WAL MART DE MEXICO FACTURACION POST VENCIMIENTO","VTA-4350":"CENTRO EDUCATIVO SAN MATEO","VTA-3562":"BRIGGS EQUIPMENT S.A. DE C.V.","VTA-2678":"HANDLING HEALTHCARE S.A. DE C.V","VTA-4004":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-3323":"BRIGGS EQUIPMENT S.A. DE C.V.","VTA-3337":"PROFUTURO AFORE SA DE CV","CP-2134":"RECYCLE TECH SA DE CV","CP-661":"JUAN CARLOS VELAZQUEZ RAMIREZ","CP-3054":"PROFUTURO AFORE SA DE CV","LP-1028":"BRIGGS EQUIPMENT","CP-3055":"EMERSON PROCESS MANAGEMENT S.A. DE C.V.","LP-1027":"AKUASUL SA DE CV","CP-2989":"ESTRATEGIAS MOVILES CELULARES","CP-3025":"SCITUM","CP-3034":"EMERSON PROCESS MANAGEMENT","VTA-4353":"JULIO DE JESUS PEREZ","VTA-4354":"JULIO DE JESUS PEREZ OMANA","VTA-4356":"ANA PAOLA AMARO","VTA-3621":"INSTITUTO ELECTORAL DEL ESTADO DE MEXICO","VTA-4355":"PUBLICO EN GENERAL (MERCADOLIBRE)","CP-3057":"AEROVIAS DE MEXICO SA DE CV","CP-3056":"EMERSON PROCESS MANAGEMENT","CP-3050":"SCITUM","VTA-2408":"QUALITY ADVANTAGE SA DE CV","VTA-4357":"SOLUCIONES TI ARVEIT, S.C.","LP-1029":"CORPORATIVO CIPSATRADE","LP-883":"BRIGGS EQUIPMENT","LP-696":"EDIFICACION Y PLANEACION","VTA-4358":"INDIGO PROAMBIENTAL","VTA-4359":"ANA PAOLA AMARO LEON","VTA-3185":"PUBLICO EN GENERAL (PCRENT STORE)","CP-3015":"ADRIANA CHAVEZ PASILLAS","CP-3022":"ADRIANA CHAVEZ PASILLAS","LP-634":"HANDLING HEALTHCARE","LP-633":"HANDLING HEALTHCARE","LP-712":"HANDLING HEALTHCARE","VTA-4362":"HANDLING HEALTHCARE","490-RF":"RECYCLE TECH","494-RF":"RECYCLE TECH","LP-729":"EDIFICACION Y PLANEACION CALZADA","LP-703":"EDIFICACION Y PLANEACION CALZADA","CP-2848":"LUMBRERAS Y TUNELES","CP-3061":"TURISMO OPCION SA DE CV","CP-2794":"MARISOL GRIFALDO ALAMILLA","CP-1052":"RECYCLE TECH SA DE CV","LP-777":"BRIGGS EQUIPMENT S.A. DE C.V.","CP-3060":"CREATIVIDAD E INTEGRACION EN SERVICIOS MEDICOS","CP-2145":"RECYCLE TECH SA DE CV","CP-3062":"NUEVA WAL MART DE MEXICO","LP-719":"CONSULTORIA Y OPERACION DE NEGOCIOS GLOBALES","VTA-4365":"ANA PAOLA AMARO LEON","VTA-4364":"ANA PAOLA AMARO LEON","VTA-4363":"CONSULTORIA Y OPERACION DE NEGOCIOS GLOBALES EM SA DE CV","LP-793":"JOHNSON HEALTH TECHNOLOGIES","VTA-4369":"JOHNSON HEALTH TECHNOLOGIES","VTA-4368":"SIEMENS","CP-3063":"DESPEGAR.COM MÉXICO","CP-3065":"SERGIO CENTENO JACOBO","CP-3064":"NUEVA WAL MART DE MEXICO","CP-3068":"DESPEGAR.COM MÉXICO","CP-3066":"DESPEGAR.COM MÉXICO","CP-3067":"DESPEGAR.COM MÉXICO","LP-1030":"BRIGGS EQUIPMENT","VTA-4374":"JORGE JAIME TERAN","CP-2977":"CONSORCIO EJECUTIVO CONTABLE Y FISCAL CECOF","CP-3069":"EMERSON PROCESS MANAGEMENT","CP-3070":"EMERSON PROCESS MANAGEMENT","VTA-4377":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4376":"MARISA DURAN MEJIA","CP-3071":"RECYCLE TECH SA DE CV","CP-3072":"DLL LEASING","VTA-4370":"UNIVERSIDAD DE LA CIÉNEGA DEL ESTADO DE MICHOACÁN DE OCAMPO","CP-3073":"DLL LEASING","CP-3074":"NUEVA WAL MART DE MEXICO","VTA-4378":"ADRIAN DE LA TORRE ESCALANTE","CP-1659":"SERGIO CENTENO JACOBO","CP-2949":"CONSORCIO EJECUTIVO CONTABLE Y FISCAL CECOF, S.A. DE C.V.","CP-2887":"OPERACIÓN Y COMERCIALIZACIÓN IDEAS CREATIVAS","LP-581":"SICONT MEX","LP-1032":"CORPORATIVO CIPSATRADE","CP-3077":"NUEVA WAL MART DE MEXICO","CP-715":"DOCTOR EMPRESA","CP-3078":"DANIEL DE JESUS GONZALEZ ARMENDARIZ","CP-3076":"EMERSON PROCESS MANAGEMENT","LP-1031":"OPM IMPORT SA DE CV","CP-3075":"INTEGRACION DE MEDIOS DE LA PENINSULA","LP-818":"PERFOPARTS","CP-2960":"MARY FERNANDA TAPIA","CP-2934":"LOGISTICA ORGANIZACIONAL PARA LA INTEGRACION DE EVENTOS","VTA-4385":"PERFOPARTS","VTA-4387":"SICONT MEX SA DE CV","VTA-4388":"ANA PAOLA AMARO LEON","VTA-4383":"ANA PAOLA AMARO","VTA-4382":"SIEMENS","513-RF":"RECYCLE TECH SA DE CV","509-RF":"RECYCLE TECH SA DE CV","510-RF":"RECYCLE TECH SA DE CV","511-RF":"RECYCLE TECH SA DE CV","VTA-4381":"PUBLICO EN GENERAL (MERCADOLIBRE)","CP-3079":"PSICOFARMA SA DE CV","CP-3081":"NUEVA WAL MART DE MEXICO","CP-3080":"NUEVA WAL MART DE MEXICO","CP-3082":"NUEVA WAL MART DE MEXICO","VTA-4389":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4390":"ANA PAOLA AMARO LEON","CP-3085":"NUEVA WAL MART DE MEXICO","CP-3084":"NUEVA WAL MART DE MEXICO","CP-3083":"NUEVA WAL MART DE MEXICO","CP-3086":"CREATIVIDAD E INTEGRACION EN SERVICIOS MEDICOS","CP-3088":"SIEMENS HEALTHCARE DIAGNOSTICS","CP-3089":"RECYCLE TECH SA DE CV","VTA-4394":"ANA PAOLA AMARO LEON","CP-3090":"SIEMENS HEALTHCARE DIAGNOSTICS S. DE RL DE CV","VTA-4397":"JULIO DE JESUS PEREZ OMANA","VTA-4379":"BRIGGS EQUIPMENT S.A. DE C.V.","VTA-4398":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4395":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4396":"EXEL DEL NORTE, S.A. DE C.V.","CP-3087":"SIEMENS HEALTHCARE DIAGNOSTICS","LP-1033":"SICONT MEX SA DE CV","LP-1035":"SICONT MEX SA DE CV","LP-1034":"SICONT MEX SA DE CV","LP-817":"BRIGGS EQUIPMENT","LP-711":"BRIGGS EQUIPMENT","LP-773":"BRIGGS EQUIPMENT","CP-3095":"CREATIVIDAD E INTEGRACION EN SERVICIOS MEDICOS","CP-3092":"TERMINAL CREATIVA","CP-3094":"NUEVA WAL MART DE MEXICO","CP-3093":"NUEVA WAL MART DE MEXICO","VTA-4405":"PUBLICO EN GENERAL (PCRENT STORE)","VTA-4403":"PSICOFARMA SA DE CV","VTA-4407":"ANA PAOLA AMARO LEON","VTA-4400":"JOSE GERARDO PEÑA RODRIGUEZ","VTA-4404":"PUBLICO EN GENERAL (PCRENT STORE)","LP-806":"CORPORATIVO CIPSATRADE S.AP.I DE C.V.","CP-3096":"TERMINAL CREATIVA, S.A. DE C.V.","CP-2986":"EMERSON PROCESS MANAGEMENT S.A. DE C.V.","CP-2983":"EMERSON PROCESS MANAGEMENT S.A. DE C.V.","CP-3091":"LUIS ANGEL RODRIGUEZ BARRAZA","CP-3097":"PUBLICO EN GENERAL (MERCADOLIBRE)","CP-3051":"SCITUM","CP-2991":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-4409":"PUBLICO EN GENERAL (PCRENT STORE)","505-RF":"RECYCLE TECH","VTA-4410":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-4411":"ANA PAOLA AMARO LEON","VTA-4418":"MARIO OMAR MORENO MEDINA","VTA-4412":"ANA PAOLA AMARO LEON","VTA-4417":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-4416":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-4420":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-4415":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-4414":"PUBLICO EN GENERAL (MERCADOLIBRE)","VTA-4413":"PUBLICO EN GENERAL (MERCADOLIBRE)"};
+let ACLARACIONES_MOVIMIENTOS = {}; // 12-Nov-2026: razones capturadas por el usuario para movimientos ambiguos (regresos de Vendido/Baja, salidas sin destino) -- igual que CLIENTES_POR_FOLIO, se hornea al publicar
 
 
 // ══ CANDADO 28-Sep-2026: aviso de archivo desactualizado/equivocado ══
@@ -8354,12 +8356,29 @@ function registrarBitacoraMovimientos(diff){
 // puramente internos entre categorías activas (Disponible↔Rentado↔Dañado)
 // no aparecen aquí porque no mueven el total.
 const CATS_ACTIVAS = new Set(['disponible','rentado','danado']);
-function renderMovimientosInventario(diff){
-  const el = document.getElementById('mov-card-inv'); if(!el) return;
-  const comprasPorOC = {}; // oc -> cantidad de equipos genuinamente nuevos
+// 11-Nov-2026: cada bucket ahora guarda el detalle serie/articulo/folio de
+// cada movimiento (no solo el conteo), para que "regresaron de Vendido",
+// "salieron a Vendido/Baja" y "desaparecidos" se puedan verificar equipo
+// por equipo en vez de ser un numero opaco. Nota de auditoria 11-Nov-2026:
+// el conteo siempre fue correcto (viene directo del diff serie-por-serie),
+// pero la etiqueta "(correccion)" asumia una causa sin evidencia -- se
+// cambia a lenguaje neutral y se agrega el detalle para que el usuario
+// juzgue la causa real (devolucion, garantia, reasignacion de serie, etc.)
+// 12-Nov-2026: clasificador compartido -- separa los movimientos del diff
+// en los mismos buckets que ya existian, pero ahora también les asigna una
+// llave estable (claveMovAclaracion) para que renderMovimientosInventario()
+// y movimientosPendientesDeAclaracion() usen exactamente la misma lógica y
+// nunca se desincronicen entre sí.
+function claveMovAclaracion(m, tipo, fecha){
+  const fo = m.from ? (m.from.cat+':'+(m.from.folio||'SIN-FOLIO')) : 'ingreso';
+  const to = m.to ? (m.to.cat+':'+(m.to.folio||'SIN-FOLIO')) : 'salida';
+  return tipo+'|'+(m.serie||'')+'|'+fo+'>'+to+'|'+fecha;
+}
+function clasificarMovimientosInventario(diff){
+  const fecha = todayStr();
+  const comprasPorOC = {};
   let sinOC = 0;
-  let salidasVendido = 0, salidasBaja = 0, entradasDesdeVendido = 0, entradasDesdeBaja = 0;
-  let desaparecidos = 0; // serie activa ayer que hoy no aparece en NINGUNA de las 5 categorías — anomalía de datos
+  const detSalidasVendido = [], detSalidasBaja = [], detEntradasVendido = [], detEntradasBaja = [], detDesaparecidos = [];
   for(const m of diff.movimientos){
     const toActiva = m.to && CATS_ACTIVAS.has(m.to.cat);
     const fromActiva = m.from && CATS_ACTIVAS.has(m.from.cat);
@@ -8367,16 +8386,71 @@ function renderMovimientosInventario(diff){
       const oc = m.oc || '';
       if(oc){ comprasPorOC[oc]=(comprasPorOC[oc]||0)+1; } else { sinOC++; }
     } else if(toActiva && m.from && !fromActiva){
-      if(m.from.cat==='vendido') entradasDesdeVendido++;
-      else if(m.from.cat==='baja') entradasDesdeBaja++;
+      if(m.from.cat==='vendido'){ m._key = claveMovAclaracion(m,'entrada_vendido',fecha); detEntradasVendido.push(m); }
+      else if(m.from.cat==='baja'){ m._key = claveMovAclaracion(m,'entrada_baja',fecha); detEntradasBaja.push(m); }
     } else if(fromActiva && (!m.to || !toActiva)){
-      if(m.to && m.to.cat==='vendido') salidasVendido++;
-      else if(m.to && m.to.cat==='baja') salidasBaja++;
-      else if(!m.to) desaparecidos++;
+      if(m.to && m.to.cat==='vendido') detSalidasVendido.push(m);
+      else if(m.to && m.to.cat==='baja') detSalidasBaja.push(m);
+      else if(!m.to){ m._key = claveMovAclaracion(m,'desaparecido',fecha); detDesaparecidos.push(m); }
     }
   }
   const totalCompras = Object.values(comprasPorOC).reduce((a,b)=>a+b,0) + sinOC;
+  return {comprasPorOC, sinOC, totalCompras, detSalidasVendido, detSalidasBaja, detEntradasVendido, detEntradasBaja, detDesaparecidos};
+}
+// Movimientos cuya causa el sistema NO puede verificar por sí solo (regresos
+// desde Vendido/Baja, o series que desaparecen de las 5 categorías) y que
+// por eso se le piden al usuario, igual que un folio nuevo pide el nombre
+// del cliente -- hasta que se llenan, el botón "Publicar cambios" se oculta.
+function movimientosPendientesDeAclaracion(diff){
+  const c = clasificarMovimientosInventario(diff);
+  const out = [];
+  function agregar(arr, tipoLbl){
+    for(const m of arr){
+      if(ACLARACIONES_MOVIMIENTOS[m._key]) continue;
+      out.push({key:m._key, tipo:tipoLbl, serie:m.serie, articulo:m.articulo,
+        folioOrigen: m.from ? (m.from.folio||'SIN-FOLIO') : '—',
+        folioDestino: m.to ? (m.to.folio||'SIN-FOLIO') : '—'});
+    }
+  }
+  agregar(c.detEntradasVendido, 'Regresó de Vendido');
+  agregar(c.detEntradasBaja, 'Regresó de Baja');
+  agregar(c.detDesaparecidos, 'Desapareció de las 5 categorías');
+  return out;
+}
+function renderMovimientosInventario(diff){
+  const el = document.getElementById('mov-card-inv'); if(!el) return;
+  const c = clasificarMovimientosInventario(diff);
+  const comprasPorOC = c.comprasPorOC, sinOC = c.sinOC, totalCompras = c.totalCompras;
+  const detSalidasVendido = c.detSalidasVendido, detSalidasBaja = c.detSalidasBaja;
+  const detEntradasVendido = c.detEntradasVendido, detEntradasBaja = c.detEntradasBaja, detDesaparecidos = c.detDesaparecidos;
+  const salidasVendido = detSalidasVendido.length, salidasBaja = detSalidasBaja.length;
+  const entradasDesdeVendido = detEntradasVendido.length, entradasDesdeBaja = detEntradasBaja.length;
+  const desaparecidos = detDesaparecidos.length;
   const neto = totalCompras + entradasDesdeVendido + entradasDesdeBaja - salidasVendido - salidasBaja - desaparecidos;
+  function notaAclaracion(m){
+    const nota = ACLARACIONES_MOVIMIENTOS[m._key];
+    return nota
+      ? '<div style="margin-top:2px;font-size:9.5px;color:var(--grn);">✔ '+nota+'</div>'
+      : '<div style="margin-top:2px;font-size:9.5px;color:var(--amb,#f59e0b);font-weight:700;">⏳ pendiente de aclaración — ver panel arriba para capturarla</div>';
+  }
+  function detalleHtml(arr, idSuf, mostrarOrigenFolio, pedirAclaracion){
+    if(!arr.length) return '';
+    const filas = arr.map(m=>{
+      const folioOrigen = m.from ? (m.from.folio||'SIN-FOLIO') : '—';
+      const folioDestino = m.to ? (m.to.folio||'SIN-FOLIO') : '—';
+      const refFolio = mostrarOrigenFolio ? folioOrigen : folioDestino;
+      return '<div style="padding:3px 0;border-bottom:1px solid var(--brd);">'
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+        +'<span style="font-weight:700;color:var(--tx);min-width:84px;">'+(m.serie||'—')+'</span>'
+        +'<span style="color:var(--tx2);flex:1;min-width:120px;">'+(m.articulo||'—')+'</span>'
+        +'<span style="color:var(--tx3);">folio: '+refFolio+'</span>'
+        +'</div>'
+        +(pedirAclaracion ? notaAclaracion(m) : '')
+        +'</div>';
+    }).join('');
+    return '<details id="det-'+idSuf+'" style="margin:2px 0 6px 0;"><summary style="cursor:pointer;font-size:9.5px;color:var(--in2);">Ver detalle ('+arr.length+')</summary>'
+      +'<div style="margin-top:4px;font-size:9.5px;">'+filas+'</div></details>';
+  }
   let lines = [];
   if(totalCompras>0){
     const ocTxts = Object.entries(comprasPorOC).map(([oc,n])=>'OC '+oc+' ('+n+')');
@@ -8385,11 +8459,11 @@ function renderMovimientosInventario(diff){
   } else {
     lines.push('<div style="margin-bottom:4px;color:var(--tx3);">Sin compras nuevas hoy (0 equipos con OC nueva).</div>');
   }
-  if(salidasVendido>0) lines.push('<div style="margin-bottom:4px;"><b style="color:var(--ros);">−'+salidasVendido+'</b> salieron a Vendido</div>');
-  if(salidasBaja>0) lines.push('<div style="margin-bottom:4px;"><b style="color:var(--ros);">−'+salidasBaja+'</b> salieron a Baja</div>');
-  if(entradasDesdeVendido>0) lines.push('<div style="margin-bottom:4px;"><b style="color:var(--grn);">+'+entradasDesdeVendido+'</b> regresaron de Vendido (corrección)</div>');
-  if(entradasDesdeBaja>0) lines.push('<div style="margin-bottom:4px;"><b style="color:var(--grn);">+'+entradasDesdeBaja+'</b> regresaron de Baja (corrección)</div>');
-  if(desaparecidos>0) lines.push('<div style="margin-bottom:4px;"><b style="color:var(--ros);">⚠ '+desaparecidos+'</b> salieron de Rentado/Disponible/Dañado sin aparecer en ninguna de las 5 categorías hoy — revisar, posible error de datos</div>');
+  if(salidasVendido>0) lines.push('<div style="margin-bottom:2px;"><b style="color:var(--ros);">−'+salidasVendido+'</b> salieron a Vendido</div>'+detalleHtml(detSalidasVendido,'sal-vta',false,false));
+  if(salidasBaja>0) lines.push('<div style="margin-bottom:2px;"><b style="color:var(--ros);">−'+salidasBaja+'</b> salieron a Baja</div>'+detalleHtml(detSalidasBaja,'sal-baja',false,false));
+  if(entradasDesdeVendido>0) lines.push('<div style="margin-bottom:2px;"><b style="color:var(--grn);">+'+entradasDesdeVendido+'</b> regresaron de Vendido <span style="color:var(--tx3);font-weight:600;">(ver aclaración por equipo abajo)</span></div>'+detalleHtml(detEntradasVendido,'ent-vta',true,true));
+  if(entradasDesdeBaja>0) lines.push('<div style="margin-bottom:2px;"><b style="color:var(--grn);">+'+entradasDesdeBaja+'</b> regresaron de Baja <span style="color:var(--tx3);font-weight:600;">(ver aclaración por equipo abajo)</span></div>'+detalleHtml(detEntradasBaja,'ent-baja',true,true));
+  if(desaparecidos>0) lines.push('<div style="margin-bottom:2px;"><b style="color:var(--ros);">⚠ '+desaparecidos+'</b> salieron de Rentado/Disponible/Dañado sin aparecer en ninguna de las 5 categorías hoy <span style="color:var(--tx3);font-weight:600;">(ver aclaración por equipo abajo)</span></div>'+detalleHtml(detDesaparecidos,'desap',false,true));
   lines.push('<div style="font-size:9px;color:var(--tx3);margin-top:6px;">Los demás movimientos de hoy son internos entre categorías activas (Disponible↔Rentado↔Dañado) y no afectan este total.</div>');
   el.innerHTML = '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--in2);margin-bottom:8px;">↕ Movimientos de hoy · Inventario Total <span style="color:var(--tx3);font-weight:600;">('+(neto>=0?'+':'')+neto+' neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;">'+lines.join('')+'</div>';
 }
@@ -8611,46 +8685,82 @@ function prepararPublicacion(diff, snapNuevo){
   renderMovimientos(diff);
   renderMovimientosInventario(diff); // 30-Oct-2026: justificación del neto de Inventario Total (compras nuevas vs. Vendido/Baja)
   renderDistribucionClientes(snapNuevo); // 30-Oct-2026: refresca el panel de Distribución por cliente con los datos de hoy
+
+  // 12-Nov-2026: el botón "Publicar cambios" ahora depende de DOS listas de
+  // pendientes (clientes Y aclaraciones de movimientos) -- se calcula al
+  // final, después de intentar renderizar ambos paneles, para que ninguno
+  // de los dos pueda dejarlo visible por accidente mientras el otro tiene
+  // algo sin llenar.
+  let hayCandadoClientes = false;
+
   if(pendientes.length===0){
     panel.style.display='none'; panel.innerHTML='';
-    document.getElementById('btn-publicar').style.display='inline-flex';
-    return;
-  }
-  document.getElementById('btn-publicar').style.display='none';
-  panel.style.display='block';
+  } else {
+    panel.style.display='block';
 
-  // ══ CANDADO 28-Sep-2026 ══ ver nota completa junto a UMBRAL_FOLIOS_SOSPECHOSO.
-  if(pendientes.length > UMBRAL_FOLIOS_SOSPECHOSO && !CONFIRMAR_MASIVO){
-    const fechaBase = (typeof SNAPSHOT_ANTERIOR!=='undefined' && SNAPSHOT_ANTERIOR && SNAPSHOT_ANTERIOR.fecha) ? SNAPSHOT_ANTERIOR.fecha : 'desconocida';
-    const nClientes = (typeof CLIENTES_POR_FOLIO!=='undefined' && CLIENTES_POR_FOLIO) ? Object.keys(CLIENTES_POR_FOLIO).length : 0;
-    panel.innerHTML =
-      '<div class="ct" style="color:var(--ros)">🚨 Esto está pidiendo '+pendientes.length+' folios de golpe — no es normal</div>'+
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.65;margin:8px 0 12px;">'+
-      'Una carga diaria normal solo debería pedir un puñado de folios (los que de verdad tuvieron movimiento desde la última vez que se publicó). Este número tan alto casi siempre significa que <b>este archivo NO es la última versión publicada</b> del dashboard: su memoria interna llega solo hasta <b>'+fechaBase+'</b> y tiene <b>'+nClientes+'</b> folios de cliente guardados.'+
-      '<br><br>Antes de continuar, verifica que abriste el HTML que descargaste la última vez que le diste <b>"Publicar cambios"</b> (no una copia anterior guardada en otra carpeta o con otro nombre). Si es el archivo correcto y de verdad hubo tantos movimientos, puedes continuar de todas formas.'+
-      '</div>'+
-      '<button class="btn" onclick="CONFIRMAR_MASIVO=true;prepararPublicacion(PENDIENTE_DIFF,PENDIENTE_SNAPSHOT);">Sí, es el archivo correcto — mostrar la lista completa de '+pendientes.length+' folios</button>';
-    return;
+    // ══ CANDADO 28-Sep-2026 ══ ver nota completa junto a UMBRAL_FOLIOS_SOSPECHOSO.
+    if(pendientes.length > UMBRAL_FOLIOS_SOSPECHOSO && !CONFIRMAR_MASIVO){
+      hayCandadoClientes = true;
+      const fechaBase = (typeof SNAPSHOT_ANTERIOR!=='undefined' && SNAPSHOT_ANTERIOR && SNAPSHOT_ANTERIOR.fecha) ? SNAPSHOT_ANTERIOR.fecha : 'desconocida';
+      const nClientes = (typeof CLIENTES_POR_FOLIO!=='undefined' && CLIENTES_POR_FOLIO) ? Object.keys(CLIENTES_POR_FOLIO).length : 0;
+      panel.innerHTML =
+        '<div class="ct" style="color:var(--ros)">🚨 Esto está pidiendo '+pendientes.length+' folios de golpe — no es normal</div>'+
+        '<div style="font-size:12px;color:var(--tx2);line-height:1.65;margin:8px 0 12px;">'+
+        'Una carga diaria normal solo debería pedir un puñado de folios (los que de verdad tuvieron movimiento desde la última vez que se publicó). Este número tan alto casi siempre significa que <b>este archivo NO es la última versión publicada</b> del dashboard: su memoria interna llega solo hasta <b>'+fechaBase+'</b> y tiene <b>'+nClientes+'</b> folios de cliente guardados.'+
+        '<br><br>Antes de continuar, verifica que abriste el HTML que descargaste la última vez que le diste <b>"Publicar cambios"</b> (no una copia anterior guardada en otra carpeta o con otro nombre). Si es el archivo correcto y de verdad hubo tantos movimientos, puedes continuar de todas formas.'+
+        '</div>'+
+        '<button class="btn" onclick="CONFIRMAR_MASIVO=true;prepararPublicacion(PENDIENTE_DIFF,PENDIENTE_SNAPSHOT);">Sí, es el archivo correcto — mostrar la lista completa de '+pendientes.length+' folios</button>';
+    } else {
+      let rows = '';
+      for(const p of pendientes){
+        const esNuevo = p.tipo==='nuevo';
+        const badge = esNuevo
+          ? '<span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;background:rgba(34,197,94,0.18);color:var(--grn,#22c55e);white-space:nowrap;">NUEVO CONTRATO</span>'
+          : '<span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;background:rgba(245,158,11,0.18);color:var(--amb,#f59e0b);white-space:nowrap;">POSIBLE SUSTITUCIÓN</span>';
+        const detalle = esNuevo
+          ? (p.n+' equipo'+(p.n===1?'':'s'))
+          : ('de '+p.ayer+' a '+p.hoy+' equipos');
+        rows += '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--brd);flex-wrap:wrap;">'+
+          '<b style="min-width:90px;">'+p.folio+'</b>'+
+          badge+
+          '<span style="color:var(--tx3);font-size:11px;min-width:150px;">'+detalle+' ('+(p.cat==='rentado'?'Rentado':'Vendido')+')</span>'+
+          '<input type="text" id="cli-'+p.folio+'" placeholder="Nombre del cliente..." style="flex:1;min-width:160px;padding:5px 8px;border-radius:6px;border:1px solid var(--brd);background:var(--bg);color:var(--tx);font-size:11px;">'+
+          '<button class="btn pri" style="padding:4px 10px;" onclick="guardarClienteFolio(\''+p.folio+'\')">Guardar</button>'+
+          '</div>';
+      }
+      panel.innerHTML = '<div class="ct">⚠️ Folios pendientes de cliente — nuevos y sustituciones ('+pendientes.length+')</div>' + rows;
+    }
   }
 
-  let rows = '';
-  for(const p of pendientes){
-    const esNuevo = p.tipo==='nuevo';
-    const badge = esNuevo
-      ? '<span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;background:rgba(34,197,94,0.18);color:var(--grn,#22c55e);white-space:nowrap;">NUEVO CONTRATO</span>'
-      : '<span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;background:rgba(245,158,11,0.18);color:var(--amb,#f59e0b);white-space:nowrap;">POSIBLE SUSTITUCIÓN</span>';
-    const detalle = esNuevo
-      ? (p.n+' equipo'+(p.n===1?'':'s'))
-      : ('de '+p.ayer+' a '+p.hoy+' equipos');
-    rows += '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--brd);flex-wrap:wrap;">'+
-      '<b style="min-width:90px;">'+p.folio+'</b>'+
-      badge+
-      '<span style="color:var(--tx3);font-size:11px;min-width:150px;">'+detalle+' ('+(p.cat==='rentado'?'Rentado':'Vendido')+')</span>'+
-      '<input type="text" id="cli-'+p.folio+'" placeholder="Nombre del cliente..." style="flex:1;min-width:160px;padding:5px 8px;border-radius:6px;border:1px solid var(--brd);background:var(--bg);color:var(--tx);font-size:11px;">'+
-      '<button class="btn pri" style="padding:4px 10px;" onclick="guardarClienteFolio(\''+p.folio+'\')">Guardar</button>'+
-      '</div>';
+  // 12-Nov-2026: panel de "movimientos pendientes de aclaración" -- mismo
+  // patrón que el de clientes: cada serie que regresó de Vendido/Baja o que
+  // desapareció de las 5 categorías se le pide a Jonh que capture la causa
+  // (devolución, garantía, reasignación de serie, error de captura, etc.)
+  // antes de poder publicar, en vez de dejarlo como un número opaco.
+  const pendAclar = movimientosPendientesDeAclaracion(diff);
+  const panelA = document.getElementById('pend-aclaraciones-panel');
+  if(pendAclar.length===0){
+    panelA.style.display='none'; panelA.innerHTML='';
+  } else {
+    panelA.style.display='block';
+    let rowsA = '';
+    for(const p of pendAclar){
+      const badge = '<span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:5px;background:rgba(245,158,11,0.18);color:var(--amb,#f59e0b);white-space:nowrap;">'+p.tipo.toUpperCase()+'</span>';
+      rowsA += '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--brd);flex-wrap:wrap;">'+
+        '<b style="min-width:90px;">'+(p.serie||'—')+'</b>'+
+        badge+
+        '<span style="color:var(--tx3);font-size:11px;min-width:180px;">'+(p.articulo||'—')+' · folio origen: '+p.folioOrigen+'</span>'+
+        '<input type="text" id="acl-'+p.key+'" placeholder="Causa: devolución, garantía, reasignación de serie, error de captura..." style="flex:1;min-width:220px;padding:5px 8px;border-radius:6px;border:1px solid var(--brd);background:var(--bg);color:var(--tx);font-size:11px;">'+
+        '<button class="btn pri" style="padding:4px 10px;" onclick="guardarAclaracionMov(\''+p.key+'\')">Guardar</button>'+
+        '</div>';
+    }
+    panelA.innerHTML = '<div class="ct">🧾 Movimientos pendientes de aclaración ('+pendAclar.length+')</div>'+
+      '<div style="font-size:11px;color:var(--tx2);margin-bottom:8px;">Estos equipos cambiaron de categoría de forma que el sistema no puede explicar por sí solo. Captura la causa real de cada uno (igual que un folio nuevo pide el nombre del cliente) para que quede registrada y no se quede como un número sin explicación.</div>'
+      + rowsA;
   }
-  panel.innerHTML = '<div class="ct">⚠️ Folios pendientes de cliente — nuevos y sustituciones ('+pendientes.length+')</div>' + rows;
+
+  document.getElementById('btn-publicar').style.display =
+    (!hayCandadoClientes && pendientes.length===0 && pendAclar.length===0) ? 'inline-flex' : 'none';
 }
 
 function guardarClienteFolio(folio){
@@ -8658,6 +8768,14 @@ function guardarClienteFolio(folio){
   const val = (inp.value||'').trim();
   if(!val){ inp.focus(); return; }
   CLIENTES_POR_FOLIO[folio] = val;
+  if(PENDIENTE_DIFF) prepararPublicacion(PENDIENTE_DIFF, PENDIENTE_SNAPSHOT);
+}
+
+function guardarAclaracionMov(key){
+  const inp = document.getElementById('acl-'+key);
+  const val = (inp.value||'').trim();
+  if(!val){ inp.focus(); return; }
+  ACLARACIONES_MOVIMIENTOS[key] = val;
   if(PENDIENTE_DIFF) prepararPublicacion(PENDIENTE_DIFF, PENDIENTE_SNAPSHOT);
 }
 
@@ -8669,6 +8787,8 @@ function exportarHTMLActualizado(){
   if(!PENDIENTE_SNAPSHOT){ alert('Primero carga los 5 XLS del día.'); return; }
   const pendientes = PENDIENTE_DIFF ? foliosPendientesDeCliente(PENDIENTE_DIFF) : [];
   if(pendientes.length>0){ alert('Faltan clientes por capturar antes de publicar.'); return; }
+  const pendAclar = PENDIENTE_DIFF ? movimientosPendientesDeAclaracion(PENDIENTE_DIFF) : [];
+  if(pendAclar.length>0){ alert('Faltan movimientos por aclarar antes de publicar (ver panel "Movimientos pendientes de aclaraci\u00f3n").'); return; }
 
   const uzTitleEl = document.querySelector('#upload-zone .uz-title');
   const uzTitleBackup = uzTitleEl ? uzTitleEl.textContent : '';
@@ -8697,6 +8817,7 @@ function exportarHTMLActualizado(){
   out = out.replace(/\nlet ULTIMO_BREAKDOWN\s*=\s*\{[\s\S]*?\};/, '\nlet ULTIMO_BREAKDOWN=' + JSON.stringify(ULTIMO_BREAKDOWN) + ';');
   out = out.replace(/\nlet SNAPSHOT_ANTERIOR\s*=\s*\{[\s\S]*?\};/, '\nlet SNAPSHOT_ANTERIOR = ' + JSON.stringify(PENDIENTE_SNAPSHOT) + ';');
   out = out.replace(/\nlet CLIENTES_POR_FOLIO\s*=\s*\{[\s\S]*?\};/, '\nlet CLIENTES_POR_FOLIO = ' + JSON.stringify(CLIENTES_POR_FOLIO) + ';');
+  out = out.replace(/\nlet ACLARACIONES_MOVIMIENTOS\s*=\s*\{[\s\S]*?\};.*\n/, '\nlet ACLARACIONES_MOVIMIENTOS = ' + JSON.stringify(ACLARACIONES_MOVIMIENTOS) + ';\n');
   out = out.replace(/\nlet HIST_MOV_VENDIDO\s*=\s*\[[\s\S]*?\];/, '\nlet HIST_MOV_VENDIDO = ' + JSON.stringify(HIST_MOV_VENDIDO) + ';');
   out = out.replace(/\nlet HIST_MOV_DANADO\s*=\s*\[[\s\S]*?\];/, '\nlet HIST_MOV_DANADO = ' + JSON.stringify(HIST_MOV_DANADO) + ';');
 

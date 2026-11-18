@@ -6145,6 +6145,8 @@ body:not(.light) .ct{text-shadow:0 0 10px rgba(129,140,248,.28)}
 
 <div class="tip" id="tip" style="left: 737px; top: 194px; opacity: 0;">2026-10-07: 2,874</div>
 
+<div id="ignorados-folio-cero-panel"></div>
+
 <script>
 // ══ HISTORIAL SEED ════════════════════════════════════════════
 // Datos históricos calculados — base de comparación
@@ -8396,11 +8398,21 @@ function claveMovAclaracion(m, tipo, fecha){
   const to = m.to ? (m.to.cat+':'+(m.to.folio||'SIN-FOLIO')) : 'salida';
   return tipo+'|'+(m.serie||'')+'|'+fo+'>'+to+'|'+fecha;
 }
+// 17-Nov-2026: auditoria confirmo (export DA_ADO.xls, columna #Contrato)
+// que el ERP usa folio/contrato "0" (normalizado aqui a 'SIN-FOLIO') como
+// placeholder para equipo que nunca tuvo un contrato real -- no solo
+// Danado, tambien pasa en Vendido/Baja. Un regreso o salida de
+// Vendido/Baja sin folio real detras no es una incidencia de negocio que
+// el usuario deba aclarar, asi que estos movimientos se excluyen de los
+// buckets que piden aclaracion y del neto de Inventario Total, y se
+// separan en detIgnoradosFolioCero solo para referencia (ver
+// renderIgnoradosFolioCero, al fondo de la pagina).
 function clasificarMovimientosInventario(diff){
   const fecha = todayStr();
   const comprasPorOC = {};
   let sinOC = 0;
   const detSalidasVendido = [], detSalidasBaja = [], detEntradasVendido = [], detEntradasBaja = [], detDesaparecidos = [];
+  const detIgnoradosFolioCero = [];
   for(const m of diff.movimientos){
     const toActiva = m.to && CATS_ACTIVAS.has(m.to.cat);
     const fromActiva = m.from && CATS_ACTIVAS.has(m.from.cat);
@@ -8408,16 +8420,26 @@ function clasificarMovimientosInventario(diff){
       const oc = m.oc || '';
       if(oc){ comprasPorOC[oc]=(comprasPorOC[oc]||0)+1; } else { sinOC++; }
     } else if(toActiva && m.from && !fromActiva){
-      if(m.from.cat==='vendido'){ m._key = claveMovAclaracion(m,'entrada_vendido',fecha); detEntradasVendido.push(m); }
-      else if(m.from.cat==='baja'){ m._key = claveMovAclaracion(m,'entrada_baja',fecha); detEntradasBaja.push(m); }
+      if(m.from.cat==='vendido'){
+        if(m.from.folio==='SIN-FOLIO'){ m._motivoIgnorado='Regresó de Vendido'; detIgnoradosFolioCero.push(m); }
+        else { m._key = claveMovAclaracion(m,'entrada_vendido',fecha); detEntradasVendido.push(m); }
+      } else if(m.from.cat==='baja'){
+        if(m.from.folio==='SIN-FOLIO'){ m._motivoIgnorado='Regresó de Baja'; detIgnoradosFolioCero.push(m); }
+        else { m._key = claveMovAclaracion(m,'entrada_baja',fecha); detEntradasBaja.push(m); }
+      }
     } else if(fromActiva && (!m.to || !toActiva)){
-      if(m.to && m.to.cat==='vendido') detSalidasVendido.push(m);
-      else if(m.to && m.to.cat==='baja') detSalidasBaja.push(m);
+      if(m.to && m.to.cat==='vendido'){
+        if(m.to.folio==='SIN-FOLIO'){ m._motivoIgnorado='Salió a Vendido'; detIgnoradosFolioCero.push(m); }
+        else { detSalidasVendido.push(m); }
+      } else if(m.to && m.to.cat==='baja'){
+        if(m.to.folio==='SIN-FOLIO'){ m._motivoIgnorado='Salió a Baja'; detIgnoradosFolioCero.push(m); }
+        else { detSalidasBaja.push(m); }
+      }
       else if(!m.to){ m._key = claveMovAclaracion(m,'desaparecido',fecha); detDesaparecidos.push(m); }
     }
   }
   const totalCompras = Object.values(comprasPorOC).reduce((a,b)=>a+b,0) + sinOC;
-  return {comprasPorOC, sinOC, totalCompras, detSalidasVendido, detSalidasBaja, detEntradasVendido, detEntradasBaja, detDesaparecidos};
+  return {comprasPorOC, sinOC, totalCompras, detSalidasVendido, detSalidasBaja, detEntradasVendido, detEntradasBaja, detDesaparecidos, detIgnoradosFolioCero};
 }
 // Movimientos cuya causa el sistema NO puede verificar por sí solo (regresos
 // desde Vendido/Baja, o series que desaparecen de las 5 categorías) y que
@@ -8488,6 +8510,31 @@ function renderMovimientosInventario(diff){
   if(desaparecidos>0) lines.push('<div style="margin-bottom:2px;"><b style="color:var(--ros);">⚠ '+desaparecidos+'</b> salieron de Rentado/Disponible/Dañado sin aparecer en ninguna de las 5 categorías hoy <span style="color:var(--tx3);font-weight:600;">(ver aclaración por equipo abajo)</span></div>'+detalleHtml(detDesaparecidos,'desap',false,true));
   lines.push('<div style="font-size:9px;color:var(--tx3);margin-top:6px;">Los demás movimientos de hoy son internos entre categorías activas (Disponible↔Rentado↔Dañado) y no afectan este total.</div>');
   el.innerHTML = '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--in2);margin-bottom:8px;">↕ Movimientos de hoy · Inventario Total <span style="color:var(--tx3);font-weight:600;">('+(neto>=0?'+':'')+neto+' neto)</span></div><div style="font-size:10.5px;color:var(--tx2);line-height:1.5;">'+lines.join('')+'</div>';
+}
+
+// 17-Nov-2026: listado informativo (sin inputs, no bloquea publicar) de los
+// equipos excluidos arriba por no tener folio/contrato real (0). Se pinta
+// hasta el fondo de la página, solo para dejar el dato a la mano.
+function renderIgnoradosFolioCero(diff){
+  const el = document.getElementById('ignorados-folio-cero-panel'); if(!el) return;
+  const c = clasificarMovimientosInventario(diff);
+  const arr = c.detIgnoradosFolioCero;
+  if(!arr.length){ el.innerHTML = ''; return; }
+  const filas = arr.map(m=>{
+    const folioOrigen = m.from ? (m.from.folio||'SIN-FOLIO') : '—';
+    const folioDestino = m.to ? (m.to.folio||'SIN-FOLIO') : '—';
+    return '<div style="display:flex;gap:8px;flex-wrap:wrap;padding:4px 0;border-bottom:1px solid var(--brd);font-size:10px;color:var(--tx3);">'
+      +'<span style="font-weight:700;color:var(--tx2);min-width:84px;">'+(m.serie||'—')+'</span>'
+      +'<span style="flex:1;min-width:160px;">'+(m.articulo||'—')+'</span>'
+      +'<span style="min-width:150px;">'+(m._motivoIgnorado||'')+'</span>'
+      +'<span>folio: '+folioOrigen+' → '+folioDestino+'</span>'
+      +'</div>';
+  }).join('');
+  el.innerHTML = '<div style="margin:30px 22px 20px;padding:12px 14px;border-top:1px dashed var(--brd);">'
+    +'<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);margin-bottom:6px;">📋 Equipos con folio 0 (sin contrato real) — ignorados hoy, '+arr.length+' registro'+(arr.length===1?'':'s')+'</div>'
+    +'<div style="font-size:9.5px;color:var(--tx3);margin-bottom:8px;">No se piden aclaración ni se cuentan en el neto de Inventario Total: el ERP usa folio/contrato "0" para marcar equipo sin contrato real (por ejemplo, equipo Dañado), así que este cambio de categoría no es una incidencia de negocio. Se listan aquí solo como referencia.</div>'
+    + filas
+    + '</div>';
 }
 
 function renderMovimientos(diff){
@@ -8706,6 +8753,7 @@ function prepararPublicacion(diff, snapNuevo){
   // nombre capturado.
   renderMovimientos(diff);
   renderMovimientosInventario(diff); // 30-Oct-2026: justificación del neto de Inventario Total (compras nuevas vs. Vendido/Baja)
+  renderIgnoradosFolioCero(diff); // 17-Nov-2026: listado de referencia, equipos sin folio real (0) excluidos del neto y de aclaraciones
   renderDistribucionClientes(snapNuevo); // 30-Oct-2026: refresca el panel de Distribución por cliente con los datos de hoy
 
   // 12-Nov-2026: el botón "Publicar cambios" ahora depende de DOS listas de
